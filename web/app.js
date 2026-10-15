@@ -3,6 +3,8 @@ const labels = {devices:"Retired devices",wipe:"Data wiping",repair:"Preparation
 const stepLabels = {wipe:"Wipe devices",transfer:"Move to workshop",prepare:"Prepare devices",deliver:"Deliver to school"};
 function clock(minutes){const m=minutes%1440;return `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`}
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node}
+for(let rate=4;rate<=12;rate++){$("custom-rate").append(new Option(String(rate),String(rate)))}
+for(let start=570;start<=720;start+=15){$("custom-start").append(new Option(clock(start),String(start)))}
 function renderComparison(scenario,proposal){
   const kinds=["devices","wipe","repair","room"];
   const firstIds=Object.fromEntries(kinds.map(kind=>[kind,scenario.offer_options[kind]?.[0]?.id]));
@@ -87,6 +89,10 @@ function render(data){
     button.disabled=!recovered;
     button.setAttribute("aria-pressed",String(recovered&&button.dataset.contingency===scenario.variant));
   }
+  const backups=scenario.offer_options.wipe||[];
+  $("custom-rate").value=String(backups.find(offer=>offer.id==="backup-wiping-slot")?.rate_per_hour??10);
+  $("custom-start").value=String(backups.find(offer=>offer.id==="late-wiping-slot")?.window_start??690);
+  for(const control of $("custom-terms").querySelectorAll("select,button"))control.disabled=!recovered;
   $("action-status").textContent=recovered?
     `Synthetic case revision ${scenario.revision} · ${scenario.variant.replaceAll("_"," ")}. No real organization was contacted.`:
     "Original synthetic scenario loaded.";
@@ -95,9 +101,13 @@ function render(data){
     `Saved in FalkorDB: ${latest.status.replaceAll("_"," ")} · proposal ${latest.id.slice(0,8)} · revision ${latest.revision}${latest.current?" (current)":" (stale after case change)"}. Run a review to see the tools and evidence used.`:
     "Run a review to see the tools and evidence used.";
 }
-async function load(path="/api/state",method="GET"){
+async function load(path="/api/state",method="GET",payload){
   $("action-status").textContent="Reading FalkorDB…";
-  try{const response=await fetch(path,{method});const data=await response.json();if(!response.ok)throw new Error(data.detail||"Request failed");render(data)}
+  try{const options={method};if(payload){options.headers={"Content-Type":"application/json"};options.body=JSON.stringify(payload)}
+    const response=await fetch(path,options);const data=await response.json();
+    if(!response.ok){const message=typeof data.detail==="string"?data.detail:"Invalid synthetic terms.";
+      if(response.status<500){$("action-status").textContent=message;return}throw new Error(message)}
+    render(data)}
   catch(error){$("action-status").textContent=error.message;$("verdict-title").textContent="Graph unavailable";$("verdict-time").textContent="";$("verdict-detail").textContent="Start FalkorDB and refresh this page."}
 }
 $("withdraw").addEventListener("click",()=>load("/api/withdraw","POST"));
@@ -105,6 +115,11 @@ $("reset").addEventListener("click",()=>load("/api/reset","POST"));
 for(const button of document.querySelectorAll("[data-contingency]")){
   button.addEventListener("click",()=>load(`/api/contingency/${button.dataset.contingency}`,"POST"));
 }
+$("custom-terms").addEventListener("submit",event=>{
+  event.preventDefault();
+  load("/api/custom-terms","POST",{w2_rate:Number($("custom-rate").value),
+    w3_start_minute:Number($("custom-start").value)});
+});
 $("agent-review").addEventListener("click",async()=>{
   const button=$("agent-review"),output=$("agent-result");button.disabled=true;output.textContent="The local agent is reading the graph…";
   try{const response=await fetch("/api/agent-review",{method:"POST"});const result=await response.json();

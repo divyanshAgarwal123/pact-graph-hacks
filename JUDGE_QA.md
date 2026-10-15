@@ -20,6 +20,8 @@ Use these as prompts to explain the code in your own words, not as claims of wor
 
 **What changes when a judge tries another offer?** Four counterfactual controls make bounded, revisioned graph writes after withdrawal. Earlier W3 availability switches the checked partner to W3 and delivers by 14:00. Reducing W2 to its historically failed rate with W3 still late blocks the proposal and makes the old episode applicable. Moving W3 earlier then rescues the goal while leaving W2's applicable failure history intact. Restoring the baseline picks W2 again. Completed device records stay intact, and earlier proposals remain stored but stale.
 
+**Are those four answers hard-coded?** No. After withdrawal, choose a W2 rate from 4–12/hour and W3 start from 09:30–12:00 in 15-minute steps. The values are validated, written to FalkorDB, and sent through the same planner and checker. For example, 7/hour and 10:15 selects W3 for a 14:15 modeled delivery. This demonstrates one extra input within the fixed synthetic workflow, not unrestricted general planning.
+
 **Why Track 01 instead of Track 02 or 03?** The current differentiator is a graph-grounded action on connected offers with an explanation path. There is one model agent, no proven multi-agent handoff or per-tenant memory isolation, and no company document corpus. Those gaps make Track 02 and 03 claims premature.
 
 **What is not proven?** All organizations and records are synthetic; no source verifies that a real provider owns devices, has a certified wipe process, accepts the plan, or can deliver it. The workflow is fixed, capped at 256 partner combinations and one van trip. A 30-run warm local timing sample excludes the model, cold start and concurrent load. No winning probability has been measured.

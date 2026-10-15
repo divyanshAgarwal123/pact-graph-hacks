@@ -11,7 +11,7 @@ from falkordb import FalkorDB
 from agent import _mcp_call
 from mcp_server import create_server
 from pact import (change_history, memories, revision, save_proposal, scenario, seed,
-                  set_contingency, simulate_withdrawal)
+                  set_contingency, set_custom_terms, simulate_withdrawal)
 from planner import _plan_selection, cp_model, plan
 
 
@@ -50,6 +50,12 @@ def run():
             pass
         else:
             raise AssertionError("Counterfactual changes require withdrawal first")
+        try:
+            set_custom_terms(g, 7, 615)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Custom terms require withdrawal first")
 
         simulate_withdrawal(g)
         recovered = scenario(g)
@@ -141,6 +147,32 @@ def run():
         checked(set_contingency(g, "baseline") == 6 and
                 plan(scenario(g))["selected_offers"]["wipe"]["id"] == "backup-wiping-slot",
                 "Baseline restoration must recover W2")
+        for rate, start in [(3, 615), (7, 590), (True, 615)]:
+            try:
+                set_custom_terms(g, rate, start)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Out-of-bounds custom terms must be rejected")
+        checked(revision(g) == 6, "Invalid custom terms must not change the case")
+        checked(set_custom_terms(g, 7, 615) == 7,
+                "Judge-chosen backup terms must advance the graph revision")
+        chosen = scenario(g)
+        custom = plan(chosen)
+        checked(chosen["variant"] == "custom" and
+                custom["status"] == "feasible_within_model" and
+                custom["selected_offers"]["wipe"]["id"] == "late-wiping-slot" and
+                custom["delivery_by_minute"] == 855 and
+                len(chosen["completed_wipe_ids"]) == 10,
+                "Non-preset W3 window must produce a checked 14:15 rescue")
+        checked("W2 rate 10→7/hour" in change_history(g)[0]["summary"] and
+                "W3 window 11:30–12:30→10:15–11:15" in change_history(g)[0]["summary"],
+                "Custom event must explain the judge-chosen graph terms")
+        checked(set_custom_terms(g, 7, 615) == 7 and len(change_history(g)) == 7,
+                "Reapplying identical custom terms must be a no-op")
+        checked(set_contingency(g, "baseline") == 8 and
+                plan(scenario(g))["selected_offers"]["wipe"]["id"] == "backup-wiping-slot",
+                "Preset must restore the checked baseline after custom terms")
 
         seed(g)
         g.query("MATCH (o:Offer {id:'device-batch'}) SET o.quantity=18")
@@ -193,7 +225,7 @@ def run():
         checked(set(seen) <= {(1, 0), (2, 10)}, f"Partial snapshot observed: {seen}")
         checked((2, 10) == (revision(g), len(scenario(g)["completed_wipe_ids"])),
                 "Recovered case must remain complete")
-        print("PASS: MCP graph tools, base, competing offers, solver uncertainty, revision events, live contingencies, partner switch, "
+        print("PASS: MCP graph tools, base, competing offers, solver uncertainty, revision events, custom terms, live contingencies, partner switch, "
               "replay integrity, "
               "stale and persisted proposals, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")

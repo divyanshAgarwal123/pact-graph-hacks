@@ -203,6 +203,19 @@ def set_contingency(g, name):
     if name not in CONTINGENCIES:
         raise ValueError("Unknown synthetic contingency")
     rate, start, end = CONTINGENCIES[name]
+    return _set_backup_terms(g, rate, start, end, name)
+
+
+def set_custom_terms(g, rate, start):
+    """Apply bounded judge-chosen backup terms to the disposable case."""
+    if (isinstance(rate, bool) or not isinstance(rate, int) or not 4 <= rate <= 12
+            or isinstance(start, bool) or not isinstance(start, int)
+            or start not in range(570, 721, 15)):
+        raise ValueError("Custom terms require W2 rate 4–12/hour and W3 start 09:30–12:00 in 15-minute steps")
+    return _set_backup_terms(g, rate, start, start + 60, "custom")
+
+
+def _set_backup_terms(g, rate, start, end, name):
     rows = g.query("""MATCH (w:Offer {id:'wiping-slot'}),
                          (w2:Offer {id:'backup-wiping-slot'}),
                          (w3:Offer {id:'late-wiping-slot'}),

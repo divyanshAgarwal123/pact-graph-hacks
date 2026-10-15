@@ -14,3 +14,5 @@ The comparison policy picks the first active offer for each requirement, then ru
 The last case is the meaningful recovery distinction: checking another connected offer finds a feasible continuation without discarding an applicable warning about W2. The earlier-W3 case saves 30 modeled minutes against the first-offer policy. The blocked case stays blocked rather than inventing a partner.
 
 These are four hand-built variants of one fixed workflow and one synthetic dataset. They support this case's decisions only. They do not measure generalized reliability, memory benefit, real-world delivery, performance against other entrants, or win probability. The model agent is outside this policy comparison; its guarded action is checked separately in `verify.py` and `VERIFICATION.md`.
+
+The browser also accepts bounded, judge-chosen W2 rate and W3 start values after withdrawal. A separate local API check used 7 devices/hour and 10:15, yielding a checked W3 delivery at 14:15. That input is outside the four rows above; it is an additional functional check, not an independent benchmark.

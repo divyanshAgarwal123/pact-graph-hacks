@@ -63,7 +63,7 @@ The old W2 rate of five per hour is marked obsolete when the live offer states t
 
 ## Revisioned counterfactuals
 
-The browser exposes four named, allowlisted synthetic offer conditions. The executed query checks that the withdrawal activated both backups, updates W2's current rate and W3's window together, advances `Revision.value`, and writes a linked `CaseEvent` with before-and-after terms in the same graph write. Repeating the current condition creates no event or revision. The input is a named condition, not user-provided Cypher.
+The browser exposes four named synthetic offer conditions and a bounded judge-chosen W2 rate/W3 start. Both use the same parameterized write query. It checks that the withdrawal activated both backups, updates W2's current rate and W3's window together, advances `Revision.value`, and writes a linked `CaseEvent` with before-and-after terms in the same graph write. Repeating the current condition creates no event or revision. Inputs are validated values, never user-provided Cypher.
 
 ```cypher
 MATCH (w:Offer {id:'wiping-slot'}),

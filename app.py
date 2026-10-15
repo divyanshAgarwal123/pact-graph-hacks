@@ -5,9 +5,10 @@ from threading import Lock
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
 from pact import (CONTINGENCIES, candidates, change_history, graph, memories, revision, scenario,
-                  seed, set_contingency, simulate_withdrawal)
+                  seed, set_contingency, set_custom_terms, simulate_withdrawal)
 from planner import plan
 from agent import review
 
@@ -15,6 +16,11 @@ from agent import review
 app = FastAPI(title="PACT synthetic demo")
 _demo_lock = Lock()
 _web = Path(__file__).parent / "web"
+
+
+class CustomTerms(BaseModel):
+    w2_rate: int = Field(ge=4, le=12)
+    w3_start_minute: int = Field(ge=570, le=720, multiple_of=15)
 
 
 @app.get("/")
@@ -88,6 +94,18 @@ def contingency(name: str):
             raise HTTPException(409, str(error)) from error
         except Exception as error:
             raise HTTPException(503, f"Could not update synthetic contingency: {error}") from error
+    return state()
+
+
+@app.post("/api/custom-terms")
+def custom_terms(terms: CustomTerms):
+    with _demo_lock:
+        try:
+            set_custom_terms(graph(), terms.w2_rate, terms.w3_start_minute)
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from error
+        except Exception as error:
+            raise HTTPException(503, f"Could not update synthetic terms: {error}") from error
     return state()
 
 

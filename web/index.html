@@ -80,11 +80,18 @@
           <div><span class="field-label">Live counterfactuals</span>
             <h3 id="contingency-heading">Change an offer, rerun the decision</h3>
             <p>These controls change only synthetic backup terms in FalkorDB. Every change advances the case revision and makes earlier proposals stale.</p></div>
-          <div class="contingency-buttons" role="group" aria-label="Synthetic backup conditions">
-            <button class="secondary" type="button" data-contingency="baseline">Baseline offers</button>
-            <button class="secondary" type="button" data-contingency="early_w3">W3 arrives earlier</button>
-            <button class="secondary" type="button" data-contingency="slow_w2">W2 slows to old rate</button>
-            <button class="secondary" type="button" data-contingency="rescue_w3">W3 rescues slow W2</button>
+          <div class="contingency-controls">
+            <div class="contingency-buttons" role="group" aria-label="Synthetic backup conditions">
+              <button class="secondary" type="button" data-contingency="baseline">Baseline offers</button>
+              <button class="secondary" type="button" data-contingency="early_w3">W3 arrives earlier</button>
+              <button class="secondary" type="button" data-contingency="slow_w2">W2 slows to old rate</button>
+              <button class="secondary" type="button" data-contingency="rescue_w3">W3 rescues slow W2</button>
+            </div>
+            <form id="custom-terms" class="custom-terms" aria-label="Choose your own synthetic backup terms">
+              <label>W2 rate / hour <select id="custom-rate" name="w2_rate" disabled></select></label>
+              <label>W3 starts <select id="custom-start" name="w3_start_minute" disabled></select></label>
+              <button class="primary" type="submit" disabled>Test these terms</button>
+            </form>
           </div>
         </div>
         <div class="change-ledger" aria-labelledby="ledger-heading">
