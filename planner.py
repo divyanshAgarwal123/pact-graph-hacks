@@ -99,8 +99,14 @@ def _plan_selection(scenario, offers):
     status = solver.solve(model)
     if status == cp_model.UNKNOWN:
         return {"status": "unresolved", "reason": "Solver timed out"}
-    if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    if status == cp_model.FEASIBLE:
+        return {"status": "unresolved", "reason": "Solver found a schedule but did not prove the earliest delivery"}
+    if status == cp_model.MODEL_INVALID:
+        return {"status": "error", "reason": "Schedule model is invalid"}
+    if status == cp_model.INFEASIBLE:
         return {"status": "blocked", "reason": "No schedule fits the declared windows and deadline"}
+    if status != cp_model.OPTIMAL:
+        return {"status": "unresolved", "reason": "Solver returned an unrecognized status"}
     steps = {name: {"start": solver.value(starts[name]), "end": solver.value(ends[name])}
              for name in starts}
     steps["clinic"] = {"start": 1980, "end": 2160}

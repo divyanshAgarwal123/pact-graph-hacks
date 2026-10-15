@@ -9,7 +9,7 @@ from falkordb import FalkorDB
 
 from pact import (memories, revision, save_proposal, scenario, seed,
                   set_contingency, simulate_withdrawal)
-from planner import plan
+from planner import _plan_selection, cp_model, plan
 
 
 NAME = "pact_verify"
@@ -51,7 +51,6 @@ def run():
                 any(a["offer_ids"]["wipe"] == "late-wiping-slot" and
                     a["status"] == "blocked" for a in result["alternatives"]),
                 "Late W3 offer must be rejected explicitly")
-        from planner import _plan_selection
         def one_unresolved(case, offers):
             if offers["wipe"]["id"] == "late-wiping-slot":
                 return {"status": "unresolved", "reason": "Simulated solver timeout"}
@@ -59,6 +58,9 @@ def run():
         with patch("planner._plan_selection", side_effect=one_unresolved):
             checked(plan(recovered)["status"] == "unresolved",
                     "An unchecked alternative must not produce a definitive recommendation")
+        with patch.object(cp_model.CpSolver, "solve", return_value=cp_model.FEASIBLE):
+            checked(_plan_selection(recovered, result["selected_offers"])["status"] == "unresolved",
+                    "A merely feasible solver status must not claim earliest delivery")
         simulate_withdrawal(g)
         checked(revision(g) == 2 and len(scenario(g)["completed_wipe_ids"]) == 10,
                 "Withdrawal replay must be idempotent")
@@ -159,7 +161,7 @@ def run():
         checked(set(seen) <= {(1, 0), (2, 10)}, f"Partial snapshot observed: {seen}")
         checked((2, 10) == (revision(g), len(scenario(g)["completed_wipe_ids"])),
                 "Recovered case must remain complete")
-        print("PASS: base, competing offers, timeout uncertainty, live contingencies, partner switch, "
+        print("PASS: base, competing offers, solver uncertainty, live contingencies, partner switch, "
               "replay integrity, "
               "stale and persisted proposals, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")
