@@ -7,6 +7,8 @@ function render(data){
   const {scenario,proposal,episodes,memories,saved_proposals}=data;
   const recovered=scenario.completed_wipe_ids.length>0;
   const selected=proposal.selected_offers||{};
+  const hasCheckedPlan=proposal.status==="feasible_within_model";
+  $("path-heading").textContent=hasCheckedPlan?"Why these partners":"Offers considered, no plan selected";
   const verdict=document.querySelector(".verdict");verdict.classList.toggle("blocked",proposal.status!=="feasible_within_model");
   $("verdict-title").textContent=proposal.status==="feasible_within_model"?"Feasible within model":proposal.status==="unresolved"?"Needs verification":"Proposal blocked";
   $("verdict-time").textContent=proposal.status==="feasible_within_model"?`Delivery ${clock(proposal.delivery_by_minute)}`:proposal.status==="unresolved"?"No checked answer yet":"Needs a new plan";
@@ -15,7 +17,7 @@ function render(data){
   const partners=$("partner-grid");partners.replaceChildren();
   for(const kind of ["devices","wipe","repair","room"]){
     const offer=selected[kind]||scenario.offer_options[kind]?.[0];const card=el("article","partner");card.dataset.kind=kind;
-    card.append(el("span","role",labels[kind]),el("h3",null,offer?.organization||"No active provider"),
+    card.append(el("span","role",`${labels[kind]} · ${hasCheckedPlan?"selected":"unselected candidate"}`),el("h3",null,offer?.organization||"No active provider"),
       el("p",null,offer?`${offer.id.replaceAll("-"," ")} · from the live graph`:"This requirement needs another offer."),
       el("div","qty",offer?`${offer.quantity} declared ${kind==="room"?"room":"units"}`:"Missing"));
     partners.append(card);
