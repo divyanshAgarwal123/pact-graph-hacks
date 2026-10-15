@@ -67,6 +67,14 @@ def seed(g):
                  "trip_minutes": trip_minutes})
     for number in range(1, 25):
         g.query("CREATE (:Device {id:$id})", {"id": f"L{number:02d}"})
+    g.query("""MATCH (r:Requirement {id:'wipe'})
+               CREATE (org:Organization {id:'wiper2', name:'Backup wiping provider W2'})
+                 -[:MAKES]->(o:Offer {id:'backup-wiping-slot', quantity:10,
+                   window_start:630, window_end:690, rate_per_hour:10,
+                   parallelism:1, minutes_each:0, van_capacity:0,
+                   trip_minutes:0, active:false})-[:SATISFIES]->(r)
+               CREATE (e:Episode {id:'wiper2-rate5-history', kind:'failed_capacity',
+                 rate_at_event:5, required_rate:10, simulated:true})-[:INVOLVED]->(org)""")
 
 
 def simulate_withdrawal(g):
@@ -87,23 +95,30 @@ def simulate_withdrawal(g):
                    SET record.completed_at=600, record.simulated=true
                    MERGE (d)-[:HAS_WIPE_RECORD]->(record)""",
                 {"id": f"L{number:02d}"})
-    g.query("MATCH (r:Requirement {id:'wipe'}) SET r.completed=10")
     g.query("""MERGE (episode:Episode {id:'wiper-withdrawal'})
                SET episode.kind='withdrawal', episode.minute=600,
                    episode.simulated=true""")
+    g.query("""MATCH (episode:Episode {id:'wiper-withdrawal'}),
+                    (org:Organization {id:'wiper'})
+               MERGE (episode)-[:INVOLVED]->(org)""")
+    g.query("""MATCH (record:WipeRecord), (episode:Episode {id:'wiper-withdrawal'})
+               MERGE (record)-[:RECORDED_IN]->(episode)""")
 
 
 def candidates(g):
     result = g.query("""MATCH (goal:Goal {id:$goal})-[:REQUIRES]->(r:Requirement)
                          <-[:SATISFIES]-(offer:Offer)<-[:MAKES]-(org:Organization)
                       WHERE coalesce(offer.active,true) = true
-                        AND offer.quantity >= r.quantity - coalesce(r.completed,0)
                       RETURN r.id, r.quantity, org.id, org.name, offer.id,
                              offer.quantity ORDER BY r.id, org.id""",
                      {"goal": GOAL_ID})
-    rows = [{"requirement": row[0], "needed": row[1], "organization_id": row[2],
+    completed_wipes = g.query("""MATCH (d:Device)-[:HAS_WIPE_RECORD]->(:WipeRecord)
+                                 RETURN count(DISTINCT d)""").result_set[0][0]
+    rows = [{"requirement": row[0], "needed": row[1] - completed_wipes if row[0] == "wipe" else row[1],
+             "organization_id": row[2],
              "organization": row[3], "offer_id": row[4], "offered": row[5]}
-            for row in result.result_set]
+            for row in result.result_set
+            if row[5] >= (row[1] - completed_wipes if row[0] == "wipe" else row[1])]
     required = {row[0] for row in g.query(
         "MATCH (:Goal {id:$goal})-[:REQUIRES]->(r:Requirement) RETURN r.id",
         {"goal": GOAL_ID}).result_set}
@@ -139,16 +154,33 @@ def scenario(g):
                        for row in rows}}
 
 
+def memories(g):
+    """Retrieve a historical failure and test it against the present offer."""
+    rows = g.query("""MATCH (e:Episode {kind:'failed_capacity'})-[:INVOLVED]->
+                           (org:Organization)-[:MAKES]->(offer:Offer)
+                      RETURN e.id, org.name, e.rate_at_event, e.required_rate,
+                             offer.id, offer.rate_per_hour""").result_set
+    return [{"episode_id": row[0], "organization": row[1],
+             "past_rate": row[2], "required_rate": row[3],
+             "current_offer_id": row[4], "current_rate": row[5],
+             "applicable_now": row[5] <= row[2],
+             "interpretation": ("Present capacity remains at the failed rate" if row[5] <= row[2]
+                                else "Past rate is obsolete; recheck the current offer")}
+            for row in rows]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("seed", "candidates", "plan", "withdraw"))
+    parser.add_argument("command", choices=("seed", "candidates", "plan", "withdraw", "memory"))
     args = parser.parse_args()
     g = graph()
     if args.command == "seed":
         seed(g)
     elif args.command == "withdraw":
         simulate_withdrawal(g)
-    if args.command == "plan":
+    if args.command == "memory":
+        result = memories(g)
+    elif args.command == "plan":
         from planner import plan
         result = plan(scenario(g))
     else:

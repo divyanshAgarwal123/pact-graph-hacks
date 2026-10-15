@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PACT | Collaboration desk</title>
+  <link rel="stylesheet" href="/app.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">P</span><span>PACT</span></div>
+      <span class="topline">Collaboration desk <span class="top-separator">/</span> Synthetic district</span>
+      <span class="environment">Local demonstration</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <p class="context">A coordinator has one deadline and four incomplete offers</p>
+          <h1 id="page-title">Get 20 prepared laptops to the school by 15:00.</h1>
+          <p class="lede">No organization can complete this alone. Inspect how contributions fit together, then simulate a provider withdrawal to see what can still be delivered.</p>
+          <div class="controls">
+            <button id="withdraw" class="primary" type="button">Simulate provider withdrawal</button>
+            <button id="reset" class="secondary" type="button">Reset scenario</button>
+          </div>
+          <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
+        </div>
+        <aside class="verdict" aria-label="Current proposal status">
+          <span class="verdict-label">Current proposal</span>
+          <strong id="verdict-title">Reading graph…</strong>
+          <span id="verdict-time" class="verdict-time"></span>
+          <p id="verdict-detail"></p>
+          <span class="verdict-foot">Synthetic schedule · no approvals or deliveries made</span>
+        </aside>
+      </section>
+
+      <section class="workarea" aria-labelledby="path-heading">
+        <div class="section-head">
+          <div><p class="section-number">01</p><h2 id="path-heading">Why these partners</h2></div>
+          <p>FalkorDB connects the goal to requirements, current offers, and the organizations behind them.</p>
+        </div>
+        <div id="partner-grid" class="partner-grid" aria-live="polite"></div>
+        <div class="query-note"><span class="query-pulse" aria-hidden="true"></span><span>Live path: Goal → Requirement ← Offer ← Organization</span></div>
+      </section>
+
+      <section class="workarea schedule-area" aria-labelledby="schedule-heading">
+        <div class="section-head">
+          <div><p class="section-number">02</p><h2 id="schedule-heading">A schedule that actually fits</h2></div>
+          <p>Each step must satisfy the declared windows, capacity, order, and delivery deadline.</p>
+        </div>
+        <div id="schedule" class="schedule" aria-live="polite"></div>
+      </section>
+
+      <section class="workarea recovery-area" aria-labelledby="recovery-heading">
+        <div class="section-head">
+          <div><p class="section-number">03</p><h2 id="recovery-heading">What survives a change</h2></div>
+          <p>Completed device records remain in the graph. A replacement plan only schedules unfinished work.</p>
+        </div>
+        <div class="recovery-layout">
+          <div class="retained">
+            <span class="field-label">Completed wipe records retained</span>
+            <strong id="retained-count">0 / 20</strong>
+            <div id="devices" class="device-grid" aria-label="Device wipe records"></div>
+          </div>
+          <div class="recovery-note">
+            <span class="field-label">Current action</span>
+            <h3 id="recovery-title">Original plan</h3>
+            <p id="recovery-copy">The original wiping provider can process all 20 devices before the transfer.</p>
+            <div id="memory-note" class="memory-note">The graph records the current facts. Learned agent memory is the next build gate.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workarea agent-area" aria-labelledby="agent-heading">
+        <div class="section-head">
+          <div><p class="section-number">04</p><h2 id="agent-heading">Ask the coordinator agent</h2></div>
+          <p>A local model chooses read-only graph tools. The solver and memory applicability check control the recommendation.</p>
+        </div>
+        <div class="agent-layout">
+          <div><p class="agent-question">“Can this still arrive by 15:00, and should W2’s old failure count?”</p>
+            <button id="agent-review" class="primary" type="button">Review current plan</button></div>
+          <div id="agent-result" class="agent-result" role="status" aria-live="polite">Run a review to see the tools and evidence used.</div>
+        </div>
+      </section>
+    </main>
+    <footer>PACT is a bounded synthetic prototype. A feasible schedule is a proposal, not a reservation or real-world result.</footer>
+  </div>
+</body>
+</html>
