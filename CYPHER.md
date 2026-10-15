@@ -1,6 +1,6 @@
 # FalkorDB queries that drive PACT
 
-The executed, parameterized queries are in [`pact.py`](pact.py). These are the central graph operations; the Python planner cannot reconstruct the case without their results. The fixture is synthetic.
+The executed, parameterized queries are in [`pact.py`](pact.py). The read tools in [`mcp_server.py`](mcp_server.py) expose their results through the official MCP SDK; the local model's selected reads are executed through an in-process MCP client. These are the central graph operations; the Python planner cannot reconstruct the case without their results. The fixture is synthetic.
 
 ## Model
 

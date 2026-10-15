@@ -78,7 +78,8 @@ $("agent-review").addEventListener("click",async()=>{
     output.replaceChildren();if(result.status!=="reviewed"){output.textContent=result.reason;return}
     output.append(el("strong",null,result.recommendation==="present_plan"?"Present the checked proposal":result.recommendation==="unresolved"?"Review unresolved":"Seek a new offer"),
       el("p",null,result.explanation),
-      el("small",null,`Tools: ${result.trace.join(" → ")}`),
+      el("small",null,`MCP reads: ${result.trace.filter(name=>name!=="record_pending_proposal").join(" → ")}`),
+      el("small",null,`Guarded action: ${result.trace.includes("record_pending_proposal")?"record_pending_proposal":"none"}`),
       el("small",null,`Evidence: ${result.evidence_ids.join(", ")}`),
       el("small",null,result.proposal_id?
         `Pending human review · case revision ${result.revision} · proposal ${result.proposal_id.slice(0,8)}`:

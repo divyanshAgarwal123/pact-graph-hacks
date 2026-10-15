@@ -1,5 +1,6 @@
 """Integration checks against a disposable FalkorDB graph, never pact_demo."""
 
+import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
@@ -7,6 +8,8 @@ from unittest.mock import patch
 
 from falkordb import FalkorDB
 
+from agent import _mcp_call
+from mcp_server import create_server
 from pact import (memories, revision, save_proposal, scenario, seed,
                   set_contingency, simulate_withdrawal)
 from planner import _plan_selection, cp_model, plan
@@ -32,6 +35,13 @@ def run():
         original = plan(scenario(g))
         checked(original["status"] == "feasible_within_model" and
                 original["delivery_by_minute"] == 840, "Original case must deliver at 14:00")
+        mcp_tools = create_server(lambda: g)
+        checked(asyncio.run(_mcp_call(mcp_tools, "inspect_connections"))["all_covered"] is True,
+                "MCP connection inspection must read the disposable graph")
+        checked(asyncio.run(_mcp_call(mcp_tools, "check_schedule"))["delivery_by_minute"] == 840,
+                "MCP schedule tool must use the current graph")
+        checked(asyncio.run(_mcp_call(mcp_tools, "recall_failure"))[0]["episode_id"] == "wiper2-rate5-history",
+                "MCP memory tool must return the graph episode")
         try:
             set_contingency(g, "early_w3")
         except ValueError:
@@ -161,7 +171,7 @@ def run():
         checked(set(seen) <= {(1, 0), (2, 10)}, f"Partial snapshot observed: {seen}")
         checked((2, 10) == (revision(g), len(scenario(g)["completed_wipe_ids"])),
                 "Recovered case must remain complete")
-        print("PASS: base, competing offers, solver uncertainty, live contingencies, partner switch, "
+        print("PASS: MCP graph tools, base, competing offers, solver uncertainty, live contingencies, partner switch, "
               "replay integrity, "
               "stale and persisted proposals, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")

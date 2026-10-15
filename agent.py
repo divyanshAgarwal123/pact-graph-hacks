@@ -1,11 +1,14 @@
-"""A bounded local agent over PACT's fixed graph tools and guarded proposal action."""
+"""A bounded local agent over PACT's MCP graph tools and guarded proposal action."""
 
+import asyncio
 import json
 import os
 from urllib.request import Request, urlopen
 
-from pact import GOAL_ID, candidates, memories, revision, save_proposal, scenario
-from planner import plan
+from mcp import Client
+
+from mcp_server import create_server
+from pact import GOAL_ID, revision, save_proposal
 
 
 MODEL = os.getenv("PACT_MODEL", "qwen3:8b")
@@ -38,9 +41,22 @@ def _chat(messages, tools=None, format_schema=None):
         return json.load(response)["message"]
 
 
+async def _mcp_call(server, name):
+    async with Client(server) as client:
+        result = await client.call_tool(name, {})
+    if result.is_error:
+        raise RuntimeError(f"MCP graph tool failed: {name}")
+    if result.structured_content is not None:
+        return result.structured_content.get("result", result.structured_content)
+    if len(result.content) == 1 and result.content[0].type == "text":
+        return json.loads(result.content[0].text)
+    raise RuntimeError(f"MCP graph tool returned unsupported content: {name}")
+
+
 def review(g):
     """Run bounded tools; record only a checked, revision-bound pending proposal."""
     starting_revision = revision(g)
+    mcp_server = create_server(lambda: g)
     messages = [
         {"role": "system", "content": (
             "You are PACT's coordinator for a synthetic scenario. Inspection tools are read-only. "
@@ -54,24 +70,25 @@ def review(g):
     ]
     executed = {}
     trace = []
-    for _ in range(3):
+    empty_retry = False
+    for _ in range(4):
         if len(executed) == len(TOOL_NAMES):
             break
         answer = _chat(messages, tools=TOOLS)
         calls = answer.get("tool_calls", [])
         if not calls:
+            if not executed and not answer.get("content") and not empty_retry:
+                messages.append({"role": "user", "content":
+                    "Call inspect_connections, check_schedule, and recall_failure now."})
+                empty_retry = True
+                continue
             break
         messages.append(answer)
         for call in calls:
             name = call.get("function", {}).get("name")
             if name not in TOOL_NAMES:
                 return {"status": "unresolved", "reason": "Model requested an unsupported tool", "trace": trace}
-            if name == "inspect_connections":
-                result = candidates(g)
-            elif name == "check_schedule":
-                result = plan(scenario(g))
-            else:
-                result = memories(g)
+            result = asyncio.run(_mcp_call(mcp_server, name))
             executed[name] = result
             trace.append(name)
             messages.append({"role": "tool", "tool_name": name,
