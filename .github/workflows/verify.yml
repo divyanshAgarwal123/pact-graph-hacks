@@ -1,0 +1,52 @@
+name: Verify PACT
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  graph-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: latest-known
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Start FalkorDB
+        run: docker compose up -d
+      - name: Wait for graph port
+        run: |
+          python - <<'PY'
+          import socket
+          import time
+
+          for attempt in range(30):
+              try:
+                  with socket.create_connection(("127.0.0.1", 6389), timeout=2):
+                      print("FalkorDB port is ready")
+                      break
+              except OSError:
+                  time.sleep(2)
+          else:
+              raise SystemExit("FalkorDB did not start within 60 seconds")
+          PY
+      - name: Run graph integration checks
+        run: uv run python verify.py
+      - name: Run four-case comparison
+        run: uv run python evaluate.py
+      - name: Show FalkorDB logs on failure
+        if: failure()
+        run: docker compose logs graph
+      - name: Stop disposable graph
+        if: always()
+        run: docker compose down -v
