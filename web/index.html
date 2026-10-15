@@ -72,6 +72,17 @@
             <div id="memory-note" class="memory-note">The graph records the current facts. Learned agent memory is the next build gate.</div>
           </div>
         </div>
+        <div class="contingencies" aria-labelledby="contingency-heading">
+          <div><span class="field-label">Live counterfactuals</span>
+            <h3 id="contingency-heading">Change an offer, rerun the decision</h3>
+            <p>These controls change only synthetic backup terms in FalkorDB. Every change advances the case revision and makes earlier proposals stale.</p></div>
+          <div class="contingency-buttons" role="group" aria-label="Synthetic backup conditions">
+            <button class="secondary" type="button" data-contingency="baseline">Baseline offers</button>
+            <button class="secondary" type="button" data-contingency="early_w3">W3 arrives earlier</button>
+            <button class="secondary" type="button" data-contingency="slow_w2">W2 slows to old rate</button>
+            <button class="secondary" type="button" data-contingency="rescue_w3">W3 rescues slow W2</button>
+          </div>
+        </div>
       </section>
 
       <section class="workarea agent-area" aria-labelledby="agent-heading">

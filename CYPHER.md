@@ -57,6 +57,24 @@ The old W2 rate of five per hour is marked obsolete when the live offer states t
 
 `simulate_withdrawal()` performs one graph write query. It first requires all ten named device nodes, then deactivates W, activates W2 and W3, advances the case revision, and creates the episode and ten wipe records. If the node precondition fails, the query produces no mutation; `verify.py` checks that failure, replay, and concurrent reads.
 
+## Revisioned counterfactuals
+
+The browser exposes four named, allowlisted synthetic offer conditions. The executed query checks that the withdrawal activated both backups, updates W2's current rate and W3's window together, and advances `Revision.value` in the same graph write. Repeating the current condition does not advance the revision. The input is a named condition, not user-provided Cypher.
+
+```cypher
+MATCH (w:Offer {id:'wiping-slot'}),
+      (w2:Offer {id:'backup-wiping-slot'}),
+      (w3:Offer {id:'late-wiping-slot'}),
+      (r:Revision {id:'case'})
+WHERE w.active=false AND w2.active=true AND w3.active=true
+  AND (w2.rate_per_hour<>$rate OR w3.window_start<>$start
+       OR w3.window_end<>$end OR coalesce(r.variant,'')<>$name)
+SET w2.rate_per_hour=$rate,
+    w3.window_start=$start,w3.window_end=$end,
+    r.value=r.value+1,r.variant=$name
+RETURN r.value
+```
+
 ## Revision-bound pending proposal
 
 ```cypher

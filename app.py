@@ -6,7 +6,8 @@ from threading import Lock
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from pact import candidates, graph, memories, revision, scenario, seed, simulate_withdrawal
+from pact import (CONTINGENCIES, candidates, graph, memories, revision, scenario,
+                  seed, set_contingency, simulate_withdrawal)
 from planner import plan
 from agent import review
 
@@ -72,6 +73,20 @@ def withdraw():
             simulate_withdrawal(graph())
         except Exception as error:
             raise HTTPException(503, f"Could not simulate withdrawal: {error}") from error
+    return state()
+
+
+@app.post("/api/contingency/{name}")
+def contingency(name: str):
+    if name not in CONTINGENCIES:
+        raise HTTPException(400, "Unknown synthetic contingency")
+    with _demo_lock:
+        try:
+            set_contingency(graph(), name)
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from error
+        except Exception as error:
+            raise HTTPException(503, f"Could not update synthetic contingency: {error}") from error
     return state()
 
 

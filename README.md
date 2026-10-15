@@ -4,7 +4,7 @@ Graph Hacks 2026 entry in progress. PACT explores whether a coordinator can asse
 
 ## Status
 
-Phases 1–3, a narrow recovery slice, and a local judge walkthrough are working. FalkorDB stores the case and discovers candidate offers by traversing `Goal → Requirement ← Offer ← Organization`. The planner keeps competing offers, reads current quantities, availability, rates, and deadline from the graph, uses OR-Tools CP-SAT to check each bounded partner combination, and independently checks schedule witnesses. A synthetic withdrawal preserves completed device records and exposes two backups. W2's 14:30 proposal fits; W3's later slot misses the deadline. A local model chooses bounded inspection tools and then explicitly requests a guarded action to record a revision-bound pending proposal in FalkorDB for human review. These are narrow synthetic feasibility results. They do **not** establish approvals, real-world delivery, general recovery, or a measured agent memory benefit.
+Phases 1–3, a narrow recovery slice, and a local judge walkthrough are working. FalkorDB stores the case and discovers candidate offers by traversing `Goal → Requirement ← Offer ← Organization`. The planner keeps competing offers, reads current quantities, availability, rates, and deadline from the graph, uses OR-Tools CP-SAT to check each bounded partner combination, and independently checks schedule witnesses. A synthetic withdrawal preserves completed device records and exposes two backups. W2's 14:30 proposal fits while W3's later slot misses the deadline. The counterfactual controls can make W3 earlier (changing the selected partner), slow W2 (blocking the plan), combine both changes (W3 rescues the slow-W2 case), or restore the baseline. A local model chooses bounded inspection tools and then explicitly requests a guarded action to record a revision-bound pending proposal in FalkorDB for human review. These are narrow synthetic feasibility results. They do **not** establish approvals, real-world delivery, general recovery, or a measured agent memory benefit.
 
 ## Run
 
@@ -17,6 +17,7 @@ UV_CACHE_DIR=/tmp/pact-uv-cache uv run python pact.py seed
 UV_CACHE_DIR=/tmp/pact-uv-cache uv run python pact.py candidates
 UV_CACHE_DIR=/tmp/pact-uv-cache uv run python pact.py plan
 UV_CACHE_DIR=/tmp/pact-uv-cache uv run python verify.py
+UV_CACHE_DIR=/tmp/pact-uv-cache uv run python evaluate.py
 UV_CACHE_DIR=/tmp/pact-uv-cache uv run python pact.py withdraw
 UV_CACHE_DIR=/tmp/pact-uv-cache uv run python pact.py plan
 ```
@@ -31,9 +32,11 @@ UV_CACHE_DIR=/tmp/pact-uv-cache uv run uvicorn app:app --host 127.0.0.1 --port 8
 
 Open `http://127.0.0.1:8765`. The graph and schedule work without Ollama; the agent review button needs the model. `PACT_MODEL` and `OLLAMA_URL` can override the local defaults. This demonstration is bound to localhost and has no login. Do not expose it publicly as a writable service.
 
-Follow [the judge walkthrough](DEMO.md) to record the required working video; [the submission draft](SUBMISSION_DRAFT.md) contains track positioning and the AI disclosure. The video and public source URL have not yet been published.
+Follow [the judge walkthrough](DEMO.md) to record the required working video; [the counterfactual evaluation](EVALUATION.md) shows the bounded first-offer comparison, and [the submission draft](SUBMISSION_DRAFT.md) contains track positioning and the AI disclosure. The video and public source URL have not yet been published.
 
-The demo graph is named `pact_demo`; `seed` replaces only that disposable graph. `verify.py` uses and deletes a separate `pact_verify` graph. `withdraw` simulates W's withdrawal at 10:00, keeps wipe records for L01–L10, and activates W2 and W3 for the remaining ten devices in one graph query. Repeating `withdraw` is idempotent only when all ten records, both backup activations, and revision 2 remain intact. Run `seed` to restore the original case. FalkorDB listens at `127.0.0.1:6389` to avoid a common local Redis port conflict. Its browser listens at `127.0.0.1:3009`. Docker Compose keeps a named volume for persistence. Queries fail if the database is unavailable.
+The demo graph is named `pact_demo`; `seed` replaces only that disposable graph. `verify.py` uses and deletes a separate `pact_verify` graph. `withdraw` simulates W's withdrawal at 10:00, keeps wipe records for L01–L10, and activates W2 and W3 for the remaining ten devices in one graph query. Repeating `withdraw` is idempotent only when all ten records, both backup activations, and a revision of at least 2 remain intact. Run `seed` to restore the original case. FalkorDB listens at `127.0.0.1:6389` to avoid a common local Redis port conflict. Its browser listens at `127.0.0.1:3009`. Docker Compose keeps a named volume for persistence. Queries fail if the database is unavailable.
+
+After withdrawal, the browser's **Live counterfactuals** controls update only the synthetic W2 rate and W3 window. Every changed set of terms advances the case revision; repeating the same setting is a no-op. Earlier proposals remain stored but are marked stale against the new revision. The HTTP endpoints are `POST /api/contingency/baseline`, `/early_w3`, `/slow_w2`, and `/rescue_w3`. They reject changes before withdrawal.
 
 ## Graph model and central query
 

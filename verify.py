@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 from falkordb import FalkorDB
 
-from pact import revision, save_proposal, scenario, seed, simulate_withdrawal
+from pact import (memories, revision, save_proposal, scenario, seed,
+                  set_contingency, simulate_withdrawal)
 from planner import plan
 
 
@@ -31,6 +32,12 @@ def run():
         original = plan(scenario(g))
         checked(original["status"] == "feasible_within_model" and
                 original["delivery_by_minute"] == 840, "Original case must deliver at 14:00")
+        try:
+            set_contingency(g, "early_w3")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Counterfactual changes require withdrawal first")
 
         simulate_withdrawal(g)
         recovered = scenario(g)
@@ -75,10 +82,32 @@ def run():
                                      {"id": proposal_id}).result_set
         checked(rows == [[2, "pending_human_review"]], "Proposal must survive a new connection")
 
-        g.query("MATCH (o:Offer {id:'backup-wiping-slot'}), (r:Revision {id:'case'}) "
-                "SET o.rate_per_hour=5, r.value=r.value+1")
+        checked(set_contingency(g, "slow_w2") == 3,
+                "Slower W2 must advance the case revision")
         checked(plan(scenario(g))["status"] == "blocked", "Both backups must fail at current rate")
+        checked(memories(g)[0]["applicable_now"] is True,
+                "Old W2 rate episode must become applicable at the same current rate")
         checked(2 != revision(g), "Saved proposal must be stale after a changed offer")
+        checked(set_contingency(g, "rescue_w3") == 4,
+                "Earlier W3 must rescue the case when W2 slows")
+        switched = plan(scenario(g))
+        checked(switched["status"] == "feasible_within_model" and
+                switched["selected_offers"]["wipe"]["id"] == "late-wiping-slot" and
+                switched["delivery_by_minute"] == 840 and
+                memories(g)[0]["applicable_now"] is True,
+                "W3 must recover the goal without erasing applicable W2 history")
+        checked(set_contingency(g, "early_w3") == 5,
+                "Restored W2 rate with earlier W3 must advance the case revision")
+        checked(plan(scenario(g))["selected_offers"]["wipe"]["id"] == "late-wiping-slot",
+                "Earlier W3 must still be the quickest choice")
+        checked(set_contingency(g, "early_w3") == 5 and revision(g) == 5,
+                "Repeated counterfactual must not change revision")
+        simulate_withdrawal(g)
+        checked(revision(g) == 5 and len(scenario(g)["completed_wipe_ids"]) == 10,
+                "Withdrawal replay must remain safe after a later case revision")
+        checked(set_contingency(g, "baseline") == 6 and
+                plan(scenario(g))["selected_offers"]["wipe"]["id"] == "backup-wiping-slot",
+                "Baseline restoration must recover W2")
 
         seed(g)
         g.query("MATCH (o:Offer {id:'device-batch'}) SET o.quantity=18")
@@ -97,16 +126,6 @@ def run():
             g.query("MATCH (d:Device {id:$id}) DETACH DELETE d",
                     {"id": f"L{number:02d}"})
         checked(plan(scenario(g))["status"] == "blocked", "Missing donor devices must block")
-
-        seed(g)
-        simulate_withdrawal(g)
-        g.query("""MATCH (o:Offer {id:'late-wiping-slot'})
-                   SET o.window_start=600,o.window_end=660""")
-        switched = plan(scenario(g))
-        checked(switched["status"] == "feasible_within_model" and
-                switched["selected_offers"]["wipe"]["id"] == "late-wiping-slot" and
-                switched["delivery_by_minute"] == 840,
-                "Earlier W3 availability must change the selected partner")
 
         seed(g)
         g.query("MATCH (d:Device {id:'L10'}) DETACH DELETE d")
@@ -140,7 +159,7 @@ def run():
         checked(set(seen) <= {(1, 0), (2, 10)}, f"Partial snapshot observed: {seen}")
         checked((2, 10) == (revision(g), len(scenario(g)["completed_wipe_ids"])),
                 "Recovered case must remain complete")
-        print("PASS: base, competing offers, timeout uncertainty, late rejection, partner switch, "
+        print("PASS: base, competing offers, timeout uncertainty, live contingencies, partner switch, "
               "replay integrity, "
               "stale and persisted proposals, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")

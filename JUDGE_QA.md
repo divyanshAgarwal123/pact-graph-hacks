@@ -16,6 +16,8 @@ Use these as prompts to explain the code in your own words, not as claims of wor
 
 **How do you avoid stale proposals?** Each supported case mutation advances a revision node. Proposal creation matches the expected revision and writes in one graph query; a stale match creates no proposal. The UI can label old proposals as not current. Direct manual database edits outside these supported writes are outside this guarantee.
 
+**What changes when a judge tries another offer?** Four counterfactual controls make bounded, revisioned graph writes after withdrawal. Earlier W3 availability switches the checked partner to W3 and delivers by 14:00. Reducing W2 to its historically failed rate with W3 still late blocks the proposal and makes the old episode applicable. Moving W3 earlier then rescues the goal while leaving W2's applicable failure history intact. Restoring the baseline picks W2 again. Completed device records stay intact, and earlier proposals remain stored but stale.
+
 **Why Track 01 instead of Track 02 or 03?** The current differentiator is a graph-grounded action on connected offers with an explanation path. There is one model agent, no proven multi-agent handoff or per-tenant memory isolation, and no company document corpus. Those gaps make Track 02 and 03 claims premature.
 
 **What is not proven?** All organizations and records are synthetic; no source verifies that a real provider owns devices, has a certified wipe process, accepts the plan, or can deliver it. The workflow is fixed, capped at 256 partner combinations and one van trip. A 30-run warm local timing sample excludes the model, cold start and concurrent load. No winning probability has been measured.

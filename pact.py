@@ -12,6 +12,12 @@ from redis.exceptions import ResponseError
 
 GRAPH_NAME = "pact_demo"
 GOAL_ID = "school-laptops"
+CONTINGENCIES = {
+    "baseline": (10, 690, 750),
+    "early_w3": (10, 600, 660),
+    "slow_w2": (5, 690, 750),
+    "rescue_w3": (5, 600, 660),
+}
 
 
 def graph():
@@ -32,7 +38,7 @@ def seed(g):
     g.query("CREATE (:Goal {id:$id, label:$label, quantity:$quantity, deadline:$deadline})",
             {"id": GOAL_ID, "label": "20 prepared laptops and a class",
              "quantity": 20, "deadline": 900})
-    g.query("CREATE (:Revision {id:'case', value:1})")
+    g.query("CREATE (:Revision {id:'case', value:1, variant:'original'})")
 
     requirements = [
         ("devices", "20 retired laptops", 20),
@@ -101,7 +107,8 @@ def simulate_withdrawal(g):
                       WITH w,w2,w3,org,revision,collect(device) AS devices
                       WHERE size(devices)=size($ids)
                       SET w.active=false, w2.active=true, w3.active=true,
-                          revision.value=revision.value+1
+                          revision.value=revision.value+1,
+                          revision.variant='baseline'
                       WITH org,devices
                       MERGE (episode:Episode {id:'wiper-withdrawal'})
                       SET episode.kind='withdrawal', episode.minute=600,
@@ -125,7 +132,8 @@ def simulate_withdrawal(g):
                              WHERE d.id IN $ids AND record.simulated=true
                              RETURN w.active,w2.active,w3.active,r.value,
                                     count(DISTINCT d.id)""", {"ids": ids}).result_set
-        if (len(replay) != 1 or replay[0] != [False, True, True, 2, len(ids)]):
+        if (len(replay) != 1 or replay[0][:3] != [False, True, True]
+                or replay[0][3] < 2 or replay[0][4] != len(ids)):
             raise ValueError("Withdrawal did not find every synthetic device")
     elif written != len(ids):
         raise ValueError("Withdrawal did not find every synthetic device")
@@ -136,6 +144,37 @@ def revision(g):
     if len(rows) != 1:
         raise ValueError("Demo revision missing or duplicated")
     return rows[0][0]
+
+
+def set_contingency(g, name):
+    """Change only the synthetic backup terms, in one revisioned graph write."""
+    if name not in CONTINGENCIES:
+        raise ValueError("Unknown synthetic contingency")
+    rate, start, end = CONTINGENCIES[name]
+    rows = g.query("""MATCH (w:Offer {id:'wiping-slot'}),
+                         (w2:Offer {id:'backup-wiping-slot'}),
+                         (w3:Offer {id:'late-wiping-slot'}),
+                         (r:Revision {id:'case'})
+                      WHERE w.active=false AND w2.active=true AND w3.active=true
+                        AND (w2.rate_per_hour<>$rate OR w3.window_start<>$start
+                             OR w3.window_end<>$end OR coalesce(r.variant,'')<>$name)
+                      SET w2.rate_per_hour=$rate,
+                          w3.window_start=$start,w3.window_end=$end,
+                          r.value=r.value+1,r.variant=$name
+                      RETURN r.value""", {"rate": rate, "start": start,
+                                           "end": end, "name": name}).result_set
+    if rows:
+        return rows[0][0]
+    current = g.ro_query("""MATCH (w:Offer {id:'wiping-slot'}),
+                               (w2:Offer {id:'backup-wiping-slot'}),
+                               (w3:Offer {id:'late-wiping-slot'}),
+                               (r:Revision {id:'case'})
+                            RETURN w.active,w2.active,w3.active,
+                                   w2.rate_per_hour,w3.window_start,w3.window_end,
+                                   r.value""").result_set
+    if (len(current) == 1 and current[0][:6] == [False, True, True, rate, start, end]):
+        return current[0][6]
+    raise ValueError("Contingency requires a complete simulated withdrawal")
 
 
 def save_proposal(g, expected_revision, selected, delivery_minute, evidence_ids):
@@ -196,6 +235,9 @@ def _scenario_once(g):
                     {"id": GOAL_ID}).result_set
     if len(goals) != 1:
         raise ValueError("Demo goal missing or duplicated in FalkorDB")
+    variant = g.ro_query("MATCH (r:Revision {id:'case'}) RETURN r.variant").result_set
+    if len(variant) != 1:
+        raise ValueError("Demo variant missing or duplicated in FalkorDB")
     requirements = {row[0]: row[1] for row in g.ro_query("""MATCH (:Goal {id:$id})
                        -[:REQUIRES]->(r:Requirement) RETURN r.id,r.quantity""",
                        {"id": GOAL_ID}).result_set}
@@ -223,6 +265,7 @@ def _scenario_once(g):
     for offers in options.values():
         offers.sort(key=lambda offer: offer["id"])
     return {"quantity": goals[0][0], "deadline": goals[0][1],
+            "variant": variant[0][0] or "custom",
             "requirement_quantities": requirements,
             "completed_wipe_ids": completed, "device_ids": inventory,
             "offer_options": options}

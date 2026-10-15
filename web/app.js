@@ -49,7 +49,13 @@ function render(data){
   const past=memories?.[0];
   $("memory-note").textContent=past?`${episodes.length?"Withdrawal recorded. ":""}Earlier, W2 failed at ${past.past_rate}/hour. Its current offer is ${past.current_rate}/hour, so that old failure ${past.applicable_now?"still warrants caution":"does not apply"}. No approval is inferred from memory.`:"No historical case is available in this graph.";
   $("withdraw").disabled=recovered;
-  $("action-status").textContent=recovered?"Withdrawal simulated. No real organization was contacted.":"Original synthetic scenario loaded.";
+  for(const button of document.querySelectorAll("[data-contingency]")){
+    button.disabled=!recovered;
+    button.setAttribute("aria-pressed",String(recovered&&button.dataset.contingency===scenario.variant));
+  }
+  $("action-status").textContent=recovered?
+    `Synthetic case revision ${scenario.revision} · ${scenario.variant.replaceAll("_"," ")}. No real organization was contacted.`:
+    "Original synthetic scenario loaded.";
   const latest=saved_proposals?.[0];
   $("agent-result").textContent=latest?
     `Saved in FalkorDB: ${latest.status.replaceAll("_"," ")} · proposal ${latest.id.slice(0,8)} · revision ${latest.revision}${latest.current?" (current)":" (stale after case change)"}. Run a review to see the tools and evidence used.`:
@@ -62,6 +68,9 @@ async function load(path="/api/state",method="GET"){
 }
 $("withdraw").addEventListener("click",()=>load("/api/withdraw","POST"));
 $("reset").addEventListener("click",()=>load("/api/reset","POST"));
+for(const button of document.querySelectorAll("[data-contingency]")){
+  button.addEventListener("click",()=>load(`/api/contingency/${button.dataset.contingency}`,"POST"));
+}
 $("agent-review").addEventListener("click",async()=>{
   const button=$("agent-review"),output=$("agent-result");button.disabled=true;output.textContent="The local agent is reading the graph…";
   try{const response=await fetch("/api/agent-review",{method:"POST"});const result=await response.json();
