@@ -16,9 +16,9 @@
 
 **Limits:** One synthetic, fixed-sequence scenario; at most 256 partner combinations and one van trip. A feasible result is a proposed schedule under declared facts, not a reservation, data-wiping certification or real-world delivery. No measured general agent-memory benefit is claimed.
 
-## Links to fill after final review
+## Submission links and remaining assets
 
-- Public source repository: **pending**
+- Public source repository: [divyanshAgarwal123/pact-graph-hacks](https://github.com/divyanshAgarwal123/pact-graph-hacks) (public; source verified on the default branch)
 - Playable demonstration video: **pending**
 - Live deployment: **not required; complete local setup is in README**
 - Final submission receipt: **pending**

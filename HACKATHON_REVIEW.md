@@ -14,7 +14,7 @@ Checked 16 October 2026 IST against the [event](https://www.wemakedevs.org/hacka
 | Track 03 company knowledge and current source citations | Unpublished | Four synthetic organizations and offers | No company corpus or source revision workflow; do not enter |
 | Public/synthetic/own data only | Mandatory | All fixture data synthetic | Keep external or personal data out of graph/video |
 | Main code/design begins within 15–18 October | Mandatory | First repository commits dated 16 October IST; pre-event notes existed | Preserve commit history and explain provenance |
-| Public source repository | Mandatory | Local Git repository; no remote | Publish only after final review |
+| Public source repository | Mandatory | [Public GitHub repository](https://github.com/divyanshAgarwal123/pact-graph-hacks); metadata and default-branch README independently fetched | Keep the published commit current |
 | README setup + graph data model + Cypher/algorithms | Mandatory | README and separate Cypher catalogue; isolated source copy installed locked dependencies and passed the integration suite | Judge should reproduce on another machine |
 | Working demo video | Mandatory | Local browser flow verified, no recorded video | Record, inspect and link playable video |
 | Deployment or complete local setup | Mandatory | Local Docker and Python instructions; fresh file copy passed `uv sync --locked` and `verify.py` against local FalkorDB | Judge still needs Docker and an optional local model for agent review |
@@ -46,4 +46,4 @@ Keep Track 01 only if the demo can show two live offers, a graph-sourced choice,
 | Polish | 17 October | Browser reset/withdraw/propose path, mobile and keyboard pass, clean setup, failure state |
 | Compete | 18 October with margin before 11:59 PM IST | Public source, playable demo video, track/disclosure text, final submission receipt |
 
-The current [Council review](COUNCIL_RESULT.md) authorized bounded local improvements, not submission readiness. Codex role diversity is not independent model-provider diversity. Public release and the final form remain separate review points.
+The current [Council review](COUNCIL_RESULT.md) authorized bounded local improvements, not submission readiness. Codex role diversity is not independent model-provider diversity. The source repository is public; the playable video and final form remain open.
