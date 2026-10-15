@@ -1,0 +1,12 @@
+services:
+  graph:
+    image: falkordb/falkordb@sha256:b0bdcac2cbaff989e77cb0610439b7a9289e86de033ccbbd4368b66fb680ae7a
+    ports:
+      - "127.0.0.1:6389:6379"
+      - "127.0.0.1:3009:3000"
+    volumes:
+      - pact-graph:/data
+    restart: unless-stopped
+
+volumes:
+  pact-graph:

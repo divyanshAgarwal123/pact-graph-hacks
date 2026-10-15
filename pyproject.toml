@@ -1,0 +1,9 @@
+[project]
+name = "pact"
+version = "0.1.0"
+description = "Graph-backed multi-party collaboration planning for Graph Hacks"
+requires-python = ">=3.10"
+dependencies = [
+    "falkordb>=1.8.0",
+    "ortools>=9.15.6755",
+]
