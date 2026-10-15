@@ -13,9 +13,13 @@ flowchart LR
   Device -- HAS_WIPE_RECORD --> WipeRecord
   WipeRecord -- RECORDED_IN --> Episode
   Episode -- INVOLVED --> Organization
+  Revision -- HAS_EVENT --> CaseEvent
+  CaseEvent -- AFFECTS --> Offer
+  CaseEvent -- RECORDED_AS --> Episode
+  Revision -- HAS_PROPOSAL --> Proposal
 ```
 
-`Revision` and `Proposal` are separate nodes. A proposal stores the checked revision value in a property; there is no edge between them. Every arrow in the diagram is a stored relationship.
+`Revision` is the current case-version node. `CaseEvent` nodes record supported mutations with previous and current offer terms; a proposal stores the checked revision in a property and is linked to the case node. The property still determines whether it is current. Every arrow in the diagram is a stored relationship.
 
 ## Candidate discovery
 
@@ -55,11 +59,11 @@ The old W2 rate of five per hour is marked obsolete when the live offer states t
 
 ## Atomic simulated withdrawal
 
-`simulate_withdrawal()` performs one graph write query. It first requires all ten named device nodes, then deactivates W, activates W2 and W3, advances the case revision, and creates the episode and ten wipe records. If the node precondition fails, the query produces no mutation; `verify.py` checks that failure, replay, and concurrent reads.
+`simulate_withdrawal()` performs one graph write query. It first requires all ten named device nodes, then deactivates W, activates W2 and W3, advances the case revision, creates a revision-linked `CaseEvent`, and creates the episode and ten wipe records. The event links the three affected offers and the withdrawal episode. If the node precondition fails, the query produces no mutation; `verify.py` checks that failure, replay, event count, and concurrent reads.
 
 ## Revisioned counterfactuals
 
-The browser exposes four named, allowlisted synthetic offer conditions. The executed query checks that the withdrawal activated both backups, updates W2's current rate and W3's window together, and advances `Revision.value` in the same graph write. Repeating the current condition does not advance the revision. The input is a named condition, not user-provided Cypher.
+The browser exposes four named, allowlisted synthetic offer conditions. The executed query checks that the withdrawal activated both backups, updates W2's current rate and W3's window together, advances `Revision.value`, and writes a linked `CaseEvent` with before-and-after terms in the same graph write. Repeating the current condition creates no event or revision. The input is a named condition, not user-provided Cypher.
 
 ```cypher
 MATCH (w:Offer {id:'wiping-slot'}),
@@ -69,18 +73,33 @@ MATCH (w:Offer {id:'wiping-slot'}),
 WHERE w.active=false AND w2.active=true AND w3.active=true
   AND (w2.rate_per_hour<>$rate OR w3.window_start<>$start
        OR w3.window_end<>$end OR coalesce(r.variant,'')<>$name)
+WITH w2,w3,r,w2.rate_per_hour AS previous_rate,
+     w3.window_start AS previous_start,
+     w3.window_end AS previous_end,
+     r.variant AS previous_variant
 SET w2.rate_per_hour=$rate,
     w3.window_start=$start,w3.window_end=$end,
     r.value=r.value+1,r.variant=$name
+CREATE (r)-[:HAS_EVENT]->(event:CaseEvent {
+  id:$event_id, revision:r.value, kind:'contingency',
+  previous_variant:previous_variant, variant:$name,
+  previous_w2_rate:previous_rate, w2_rate:$rate,
+  previous_w3_start:previous_start, w3_start:$start,
+  previous_w3_end:previous_end, w3_end:$end,
+  simulated:true})
+CREATE (event)-[:AFFECTS]->(w2)
+CREATE (event)-[:AFFECTS]->(w3)
 RETURN r.value
 ```
+
+The UI reads `(:Revision)-[:HAS_EVENT]->(:CaseEvent)-[:AFFECTS]->(:Offer)` to explain each supported case change. The event ledger is provenance for this synthetic workflow, not evidence that an external organization accepted the offer.
 
 ## Revision-bound pending proposal
 
 ```cypher
 MATCH (r:Revision {id:'case'})
 WHERE r.value=$expected
-CREATE (p:Proposal {id:$id, revision:$expected,
+CREATE (r)-[:HAS_PROPOSAL]->(p:Proposal {id:$id, revision:$expected,
   status:'pending_human_review', delivery_minute:$delivery,
   selected_offer_ids:$offers, evidence_ids:$evidence,
   created_at:$created_at, simulated:true})

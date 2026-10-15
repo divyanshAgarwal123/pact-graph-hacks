@@ -27,7 +27,7 @@ function renderComparison(scenario,proposal){
   comparison.append(el("p","comparison-conclusion",conclusion));
 }
 function render(data){
-  const {scenario,proposal,episodes,memories,saved_proposals}=data;
+  const {scenario,proposal,episodes,memories,saved_proposals,changes}=data;
   const recovered=scenario.completed_wipe_ids.length>0;
   const selected=proposal.selected_offers||{};
   const hasCheckedPlan=proposal.status==="feasible_within_model";
@@ -74,6 +74,14 @@ function render(data){
     "The original wiping provider can process all 20 devices before transfer.";
   const past=memories?.[0];
   $("memory-note").textContent=past?`${episodes.length?"Withdrawal recorded. ":""}Earlier, W2 failed at ${past.past_rate}/hour. Its current offer is ${past.current_rate}/hour, so that old failure ${past.applicable_now?"still warrants caution":"does not apply"}. No approval is inferred from memory.`:"No historical case is available in this graph.";
+  const ledger=$("ledger-items");ledger.replaceChildren();
+  for(const event of (changes||[]).slice(0,6)){
+    const row=el("article","ledger-item");
+    row.append(el("strong",null,`Revision ${event.revision} · ${event.kind}`),
+      el("p",null,event.summary),
+      el("small",null,`Graph event ${event.id.slice(0,8)}${event.affected_offer_ids.length?` · offers ${event.affected_offer_ids.join(", ")}`:""}`));
+    ledger.append(row);
+  }
   $("withdraw").disabled=recovered;
   for(const button of document.querySelectorAll("[data-contingency]")){
     button.disabled=!recovered;

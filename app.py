@@ -6,7 +6,7 @@ from threading import Lock
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from pact import (CONTINGENCIES, candidates, graph, memories, revision, scenario,
+from pact import (CONTINGENCIES, candidates, change_history, graph, memories, revision, scenario,
                   seed, set_contingency, simulate_withdrawal)
 from planner import plan
 from agent import review
@@ -48,7 +48,8 @@ def state():
                            ORDER BY p.created_at DESC LIMIT 5""").result_set]
             result = {"candidate_graph": candidates(g), "scenario": current,
                       "proposal": plan(current), "episodes": episodes,
-                      "memories": memories(g), "saved_proposals": proposals}
+                      "memories": memories(g), "saved_proposals": proposals,
+                      "changes": change_history(g)}
             if revision(g) == current["revision"]:
                 return result
         raise RuntimeError("Graph changed during state read; retry")

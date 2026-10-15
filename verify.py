@@ -10,7 +10,7 @@ from falkordb import FalkorDB
 
 from agent import _mcp_call
 from mcp_server import create_server
-from pact import (memories, revision, save_proposal, scenario, seed,
+from pact import (change_history, memories, revision, save_proposal, scenario, seed,
                   set_contingency, simulate_withdrawal)
 from planner import _plan_selection, cp_model, plan
 
@@ -32,6 +32,8 @@ def run():
     g = connection()
     try:
         seed(g)
+        checked([(event["revision"], event["kind"]) for event in change_history(g)] ==
+                [(1, "seed")], "Seed must create one revision-linked event")
         original = plan(scenario(g))
         checked(original["status"] == "feasible_within_model" and
                 original["delivery_by_minute"] == 840, "Original case must deliver at 14:00")
@@ -54,6 +56,11 @@ def run():
         result = plan(recovered)
         checked(recovered["revision"] == 2 and len(recovered["completed_wipe_ids"]) == 10,
                 "Withdrawal must retain exactly ten records in revision 2")
+        checked([(event["revision"], event["kind"]) for event in change_history(g)] ==
+                [(2, "withdrawal"), (1, "seed")] and
+                change_history(g)[0]["affected_offer_ids"] ==
+                ["backup-wiping-slot", "late-wiping-slot", "wiping-slot"],
+                "Withdrawal event must link the changed graph offers")
         checked(result["status"] == "feasible_within_model" and
                 result["selected_offers"]["wipe"]["id"] == "backup-wiping-slot" and
                 result["delivery_by_minute"] == 870, "W2 must deliver by 14:30")
@@ -74,6 +81,8 @@ def run():
         simulate_withdrawal(g)
         checked(revision(g) == 2 and len(scenario(g)["completed_wipe_ids"]) == 10,
                 "Withdrawal replay must be idempotent")
+        checked(len(change_history(g)) == 2,
+                "Withdrawal replay must not create another change event")
 
         g.query("MATCH (:Device {id:'L10'})-[:HAS_WIPE_RECORD]->(r:WipeRecord) DETACH DELETE r")
         try:
@@ -93,9 +102,16 @@ def run():
         rows = connection().ro_query("MATCH (p:Proposal {id:$id}) RETURN p.revision,p.status",
                                      {"id": proposal_id}).result_set
         checked(rows == [[2, "pending_human_review"]], "Proposal must survive a new connection")
+        linked = connection().ro_query("""MATCH (:Revision {id:'case'})-[:HAS_PROPOSAL]->
+                                          (p:Proposal {id:$id}) RETURN p.revision""",
+                                       {"id": proposal_id}).result_set
+        checked(linked == [[2]], "Pending proposal must link to the case revision")
 
         checked(set_contingency(g, "slow_w2") == 3,
                 "Slower W2 must advance the case revision")
+        checked(change_history(g)[0]["revision"] == 3 and
+                "W2 rate 10→5/hour" in change_history(g)[0]["summary"],
+                "Slower W2 event must retain the before-and-after rate")
         checked(plan(scenario(g))["status"] == "blocked", "Both backups must fail at current rate")
         checked(memories(g)[0]["applicable_now"] is True,
                 "Old W2 rate episode must become applicable at the same current rate")
@@ -108,12 +124,17 @@ def run():
                 switched["delivery_by_minute"] == 840 and
                 memories(g)[0]["applicable_now"] is True,
                 "W3 must recover the goal without erasing applicable W2 history")
+        checked(change_history(g)[0]["revision"] == 4 and
+                "W3 window 11:30–12:30→10:00–11:00" in change_history(g)[0]["summary"],
+                "Rescue event must retain the before-and-after W3 window")
         checked(set_contingency(g, "early_w3") == 5,
                 "Restored W2 rate with earlier W3 must advance the case revision")
         checked(plan(scenario(g))["selected_offers"]["wipe"]["id"] == "late-wiping-slot",
                 "Earlier W3 must still be the quickest choice")
         checked(set_contingency(g, "early_w3") == 5 and revision(g) == 5,
                 "Repeated counterfactual must not change revision")
+        checked(len(change_history(g)) == 5,
+                "No-op counterfactual must not create another change event")
         simulate_withdrawal(g)
         checked(revision(g) == 5 and len(scenario(g)["completed_wipe_ids"]) == 10,
                 "Withdrawal replay must remain safe after a later case revision")
@@ -149,7 +170,8 @@ def run():
             raise AssertionError("Missing device must reject the whole withdrawal")
         checked(revision(g) == 1 and
                 g.ro_query("MATCH (w:Offer {id:'wiping-slot'}) RETURN w.active").result_set == [[None]] and
-                not g.ro_query("MATCH (r:WipeRecord) RETURN r").result_set,
+                not g.ro_query("MATCH (r:WipeRecord) RETURN r").result_set and
+                len(change_history(g)) == 1,
                 "Failed withdrawal must leave the case untouched")
 
         seed(g)
@@ -171,7 +193,7 @@ def run():
         checked(set(seen) <= {(1, 0), (2, 10)}, f"Partial snapshot observed: {seen}")
         checked((2, 10) == (revision(g), len(scenario(g)["completed_wipe_ids"])),
                 "Recovered case must remain complete")
-        print("PASS: MCP graph tools, base, competing offers, solver uncertainty, live contingencies, partner switch, "
+        print("PASS: MCP graph tools, base, competing offers, solver uncertainty, revision events, live contingencies, partner switch, "
               "replay integrity, "
               "stale and persisted proposals, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")

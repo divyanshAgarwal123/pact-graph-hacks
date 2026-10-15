@@ -87,6 +87,11 @@
             <button class="secondary" type="button" data-contingency="rescue_w3">W3 rescues slow W2</button>
           </div>
         </div>
+        <div class="change-ledger" aria-labelledby="ledger-heading">
+          <div><span class="field-label">Graph provenance</span><h3 id="ledger-heading">What changed the decision</h3>
+            <p>Each supported case change is linked to its revision in FalkorDB. Earlier proposals remain stored and become stale when the revision advances.</p></div>
+          <div id="ledger-items" class="ledger-items" aria-live="polite"></div>
+        </div>
       </section>
 
       <section class="workarea agent-area" aria-labelledby="agent-heading">

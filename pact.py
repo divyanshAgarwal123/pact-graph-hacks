@@ -39,6 +39,9 @@ def seed(g):
             {"id": GOAL_ID, "label": "20 prepared laptops and a class",
              "quantity": 20, "deadline": 900})
     g.query("CREATE (:Revision {id:'case', value:1, variant:'original'})")
+    g.query("""MATCH (r:Revision {id:'case'})
+               CREATE (r)-[:HAS_EVENT]->(:CaseEvent {id:'initial-case',
+                 revision:1, kind:'seed', variant:'original', simulated:true})""")
 
     requirements = [
         ("devices", "20 retired laptops", 20),
@@ -106,21 +109,33 @@ def simulate_withdrawal(g):
                       MATCH (device:Device) WHERE device.id IN $ids
                       WITH w,w2,w3,org,revision,collect(device) AS devices
                       WHERE size(devices)=size($ids)
+                      WITH w,w2,w3,org,revision,devices,
+                           revision.variant AS previous_variant
                       SET w.active=false, w2.active=true, w3.active=true,
                           revision.value=revision.value+1,
                           revision.variant='baseline'
-                      WITH org,devices
+                      CREATE (revision)-[:HAS_EVENT]->(event:CaseEvent {
+                        id:$event_id, revision:revision.value,
+                        kind:'withdrawal', previous_variant:previous_variant,
+                        variant:'baseline', retained_wipes:size(devices),
+                        w2_rate:w2.rate_per_hour, w3_start:w3.window_start,
+                        simulated:true})
+                      CREATE (event)-[:AFFECTS]->(w)
+                      CREATE (event)-[:AFFECTS]->(w2)
+                      CREATE (event)-[:AFFECTS]->(w3)
+                      WITH org,devices,event
                       MERGE (episode:Episode {id:'wiper-withdrawal'})
                       SET episode.kind='withdrawal', episode.minute=600,
                           episode.simulated=true
                       MERGE (episode)-[:INVOLVED]->(org)
+                      MERGE (event)-[:RECORDED_AS]->(episode)
                       WITH episode,devices
                       UNWIND devices AS device
                       MERGE (record:WipeRecord {device_id:device.id})
                       SET record.completed_at=600, record.simulated=true
                       MERGE (device)-[:HAS_WIPE_RECORD]->(record)
                       MERGE (record)-[:RECORDED_IN]->(episode)
-                      RETURN count(device)""", {"ids": ids})
+                      RETURN count(device)""", {"ids": ids, "event_id": str(uuid4())})
     written = result.result_set[0][0] if result.result_set else 0
     if written == 0:
         replay = g.ro_query("""MATCH (w:Offer {id:'wiping-slot'}),
@@ -146,6 +161,43 @@ def revision(g):
     return rows[0][0]
 
 
+def change_history(g):
+    """Read revision-linked events that explain supported synthetic writes."""
+    rows = g.ro_query("""MATCH (:Revision {id:'case'})-[:HAS_EVENT]->(e:CaseEvent)
+                         OPTIONAL MATCH (e)-[:AFFECTS]->(offer:Offer)
+                         RETURN e.id,e.revision,e.kind,e.previous_variant,e.variant,
+                                e.retained_wipes,e.previous_w2_rate,e.w2_rate,
+                                e.previous_w3_start,e.w3_start,
+                                e.previous_w3_end,e.w3_end,
+                                collect(DISTINCT offer.id)
+                         ORDER BY e.revision DESC""").result_set
+
+    def hhmm(minute):
+        return f"{minute // 60:02d}:{minute % 60:02d}"
+
+    events = []
+    for (event_id, number, kind, previous_variant, variant, retained,
+         previous_rate, rate, previous_start, start, previous_end, end,
+         affected) in rows:
+        if kind == "seed":
+            summary = "Original synthetic commitments loaded."
+        elif kind == "withdrawal":
+            summary = f"W withdrew; {retained} completed wipes were retained; W2 and W3 became active."
+        else:
+            changes = []
+            if previous_rate != rate:
+                changes.append(f"W2 rate {previous_rate}→{rate}/hour")
+            if previous_start != start or previous_end != end:
+                changes.append(f"W3 window {hhmm(previous_start)}–{hhmm(previous_end)}"
+                               f"→{hhmm(start)}–{hhmm(end)}")
+            summary = "; ".join(changes) or f"Offer terms set to {variant}."
+        events.append({"id": event_id, "revision": number, "kind": kind,
+                       "previous_variant": previous_variant, "variant": variant,
+                       "affected_offer_ids": sorted(item for item in affected if item),
+                       "summary": summary})
+    return events
+
+
 def set_contingency(g, name):
     """Change only the synthetic backup terms, in one revisioned graph write."""
     if name not in CONTINGENCIES:
@@ -158,11 +210,25 @@ def set_contingency(g, name):
                       WHERE w.active=false AND w2.active=true AND w3.active=true
                         AND (w2.rate_per_hour<>$rate OR w3.window_start<>$start
                              OR w3.window_end<>$end OR coalesce(r.variant,'')<>$name)
+                      WITH w2,w3,r,w2.rate_per_hour AS previous_rate,
+                           w3.window_start AS previous_start,
+                           w3.window_end AS previous_end,
+                           r.variant AS previous_variant
                       SET w2.rate_per_hour=$rate,
                           w3.window_start=$start,w3.window_end=$end,
                           r.value=r.value+1,r.variant=$name
+                      CREATE (r)-[:HAS_EVENT]->(event:CaseEvent {
+                        id:$event_id, revision:r.value, kind:'contingency',
+                        previous_variant:previous_variant, variant:$name,
+                        previous_w2_rate:previous_rate, w2_rate:$rate,
+                        previous_w3_start:previous_start, w3_start:$start,
+                        previous_w3_end:previous_end, w3_end:$end,
+                        simulated:true})
+                      CREATE (event)-[:AFFECTS]->(w2)
+                      CREATE (event)-[:AFFECTS]->(w3)
                       RETURN r.value""", {"rate": rate, "start": start,
-                                           "end": end, "name": name}).result_set
+                                           "end": end, "name": name,
+                                           "event_id": str(uuid4())}).result_set
     if rows:
         return rows[0][0]
     current = g.ro_query("""MATCH (w:Offer {id:'wiping-slot'}),
@@ -183,7 +249,7 @@ def save_proposal(g, expected_revision, selected, delivery_minute, evidence_ids)
     created_at = datetime.now(timezone.utc).isoformat()
     rows = g.query("""MATCH (r:Revision {id:'case'})
                       WHERE r.value=$expected
-                      CREATE (p:Proposal {id:$id, revision:$expected,
+                      CREATE (r)-[:HAS_PROPOSAL]->(p:Proposal {id:$id, revision:$expected,
                         status:'pending_human_review', delivery_minute:$delivery,
                         selected_offer_ids:$offers, evidence_ids:$evidence,
                         created_at:$created_at, simulated:true})
