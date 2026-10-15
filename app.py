@@ -6,7 +6,7 @@ from threading import Lock
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from pact import candidates, graph, memories, scenario, seed, simulate_withdrawal
+from pact import candidates, graph, memories, revision, scenario, seed, simulate_withdrawal
 from planner import plan
 from agent import review
 
@@ -35,12 +35,22 @@ def javascript():
 def state():
     try:
         g = graph()
-        current = scenario(g)
-        episodes = [row[0] for row in g.query(
-            "MATCH (e:Episode {kind:'withdrawal'}) RETURN e.id").result_set]
-        return {"candidate_graph": candidates(g), "scenario": current,
-                "proposal": plan(current), "episodes": episodes,
-                "memories": memories(g)}
+        for _ in range(3):
+            current = scenario(g)
+            episodes = [row[0] for row in g.ro_query(
+                "MATCH (e:Episode {kind:'withdrawal'}) RETURN e.id").result_set]
+            proposals = [{"id": row[0], "revision": row[1],
+                          "created_at": row[2], "status": row[3],
+                          "current": row[1] == current["revision"]}
+                         for row in g.ro_query("""MATCH (p:Proposal)
+                           RETURN p.id, p.revision, p.created_at, p.status
+                           ORDER BY p.created_at DESC LIMIT 5""").result_set]
+            result = {"candidate_graph": candidates(g), "scenario": current,
+                      "proposal": plan(current), "episodes": episodes,
+                      "memories": memories(g), "saved_proposals": proposals}
+            if revision(g) == current["revision"]:
+                return result
+        raise RuntimeError("Graph changed during state read; retry")
     except Exception as error:
         raise HTTPException(503, f"FalkorDB demo unavailable: {error}") from error
 

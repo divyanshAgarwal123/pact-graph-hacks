@@ -43,6 +43,7 @@
         </div>
         <div id="partner-grid" class="partner-grid" aria-live="polite"></div>
         <div class="query-note"><span class="query-pulse" aria-hidden="true"></span><span>Live path: Goal → Requirement ← Offer ← Organization</span></div>
+        <div id="alternatives" class="alternatives" aria-live="polite"></div>
       </section>
 
       <section class="workarea schedule-area" aria-labelledby="schedule-heading">
@@ -76,11 +77,11 @@
       <section class="workarea agent-area" aria-labelledby="agent-heading">
         <div class="section-head">
           <div><p class="section-number">04</p><h2 id="agent-heading">Ask the coordinator agent</h2></div>
-          <p>A local model chooses read-only graph tools. The solver and memory applicability check control the recommendation.</p>
+          <p>A local model chooses graph tools, then may request a guarded pending proposal. The schedule checker and case revision decide whether it can be recorded.</p>
         </div>
         <div class="agent-layout">
           <div><p class="agent-question">“Can this still arrive by 15:00, and should W2’s old failure count?”</p>
-            <button id="agent-review" class="primary" type="button">Review current plan</button></div>
+            <button id="agent-review" class="primary" type="button">Create checked proposal</button></div>
           <div id="agent-result" class="agent-result" role="status" aria-live="polite">Run a review to see the tools and evidence used.</div>
         </div>
       </section>

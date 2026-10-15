@@ -1,10 +1,10 @@
-"""A read-only, bounded local agent over PACT's fixed graph tools."""
+"""A bounded local agent over PACT's fixed graph tools and guarded proposal action."""
 
 import json
 import os
 from urllib.request import Request, urlopen
 
-from pact import GOAL_ID, candidates, memories, scenario
+from pact import GOAL_ID, candidates, memories, revision, save_proposal, scenario
 from planner import plan
 
 
@@ -19,6 +19,10 @@ TOOLS = [{"type": "function", "function": {
         ("check_schedule", "Solve and independently check the current synthetic schedule"),
         ("recall_failure", "Read a prior provider failure from FalkorDB and check if it applies to the current offer"),
     )]
+ACTION_TOOL = [{"type": "function", "function": {
+    "name": "record_pending_proposal",
+    "description": "Record the independently checked plan in FalkorDB as pending human review, only if the current graph revision is unchanged. This does not approve or reserve anything.",
+    "parameters": {"type": "object", "properties": {}, "required": []}}}]
 
 
 def _chat(messages, tools=None, format_schema=None):
@@ -35,10 +39,11 @@ def _chat(messages, tools=None, format_schema=None):
 
 
 def review(g):
-    """Run at most three tool-choice rounds; validate the model's conclusion."""
+    """Run bounded tools; record only a checked, revision-bound pending proposal."""
+    starting_revision = revision(g)
     messages = [
         {"role": "system", "content": (
-            "You are PACT's read-only coordinator for a synthetic scenario. "
+            "You are PACT's coordinator for a synthetic scenario. Inspection tools are read-only. "
             "Call inspect_connections, check_schedule, and recall_failure before concluding. "
             "Use only those tool results. A past failure at a different rate may be obsolete. "
             "Never claim a proposal is approved, reserved, or physically completed. "
@@ -73,6 +78,8 @@ def review(g):
                              "content": json.dumps(result)})
     if set(executed) != set(TOOL_NAMES):
         return {"status": "unresolved", "reason": "Required graph tools were not called", "trace": trace}
+    if revision(g) != starting_revision:
+        return {"status": "unresolved", "reason": "Graph changed during review; retry", "trace": trace}
 
     schema = {"type": "object", "properties": {
         "why": {"type": "string"},
@@ -83,6 +90,7 @@ def review(g):
         "Keep why under 35 words. Cite offer IDs or episode IDs. "
         "Describe a synthetic proposal, never an approval or completed delivery.")})
     draft = json.loads(_chat(messages, format_schema=schema)["content"])
+    messages.append({"role": "assistant", "content": json.dumps(draft)})
     checked = executed["check_schedule"]
     history = executed["recall_failure"]
     expected_recommendation = ("present_plan" if checked["status"] == "feasible_within_model"
@@ -103,8 +111,28 @@ def review(g):
         explanation = "W2's current rate matches its earlier failed rate, and the schedule checker found no feasible continuation."
     else:
         explanation = "Recommendation follows the current graph facts and the independent schedule check."
+    proposal_id = None
+    if expected_recommendation == "present_plan":
+        messages.append({"role": "user", "content": (
+            "The independently checked plan is feasible under current synthetic facts. "
+            "If the graph evidence supports handing this plan to a person, call "
+            "record_pending_proposal. This records only a pending review item, not an approval.")})
+        action = _chat(messages, tools=ACTION_TOOL)
+        calls = action.get("tool_calls", [])
+        if len(calls) != 1 or calls[0].get("function", {}).get("name") != "record_pending_proposal":
+            return {"status": "unresolved", "reason": "Agent did not request the bounded proposal action",
+                    "trace": trace}
+        selected = [offer["id"] for offer in checked["selected_offers"].values()]
+        evidence = sorted(set(draft["evidence_ids"]) | set(selected))
+        proposal_id = save_proposal(g, starting_revision, selected,
+                                    checked["delivery_by_minute"], evidence)
+        if proposal_id is None:
+            return {"status": "unresolved", "reason": "Graph changed before proposal write; retry",
+                    "trace": trace}
+        trace.append("record_pending_proposal")
     return {"status": "reviewed", "recommendation": expected_recommendation,
             "memory_assessment": expected_memory, "explanation": explanation,
             "evidence_ids": draft["evidence_ids"], "trace": trace,
             "checked_plan": checked["status"], "model": MODEL,
-            "disclaimer": "Read-only model review of a synthetic proposal; no approval or external action"}
+            "proposal_id": proposal_id, "revision": starting_revision,
+            "disclaimer": "Synthetic pending proposal only; no approval or external action"}

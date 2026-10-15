@@ -3,6 +3,8 @@
 import argparse
 import json
 import os
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from falkordb import FalkorDB
 from redis.exceptions import ResponseError
@@ -30,6 +32,7 @@ def seed(g):
     g.query("CREATE (:Goal {id:$id, label:$label, quantity:$quantity, deadline:$deadline})",
             {"id": GOAL_ID, "label": "20 prepared laptops and a class",
              "quantity": 20, "deadline": 900})
+    g.query("CREATE (:Revision {id:'case', value:1})")
 
     requirements = [
         ("devices", "20 retired laptops", 20),
@@ -66,7 +69,9 @@ def seed(g):
                  "minutes_each": minutes_each, "van_capacity": van_capacity,
                  "trip_minutes": trip_minutes})
     for number in range(1, 25):
-        g.query("CREATE (:Device {id:$id})", {"id": f"L{number:02d}"})
+        g.query("""MATCH (offer:Offer {id:'device-batch'})
+                   CREATE (offer)-[:INCLUDES]->(:Device {id:$id})""",
+                {"id": f"L{number:02d}"})
     g.query("""MATCH (r:Requirement {id:'wipe'})
                CREATE (org:Organization {id:'wiper2', name:'Backup wiping provider W2'})
                  -[:MAKES]->(o:Offer {id:'backup-wiping-slot', quantity:10,
@@ -75,34 +80,81 @@ def seed(g):
                    trip_minutes:0, active:false})-[:SATISFIES]->(r)
                CREATE (e:Episode {id:'wiper2-rate5-history', kind:'failed_capacity',
                  rate_at_event:5, required_rate:10, simulated:true})-[:INVOLVED]->(org)""")
+    g.query("""MATCH (r:Requirement {id:'wipe'})
+               CREATE (:Organization {id:'wiper3', name:'Late backup W3'})
+                 -[:MAKES]->(:Offer {id:'late-wiping-slot', quantity:10,
+                   window_start:690, window_end:750, rate_per_hour:10,
+                   parallelism:1, minutes_each:0, van_capacity:0,
+                   trip_minutes:0, active:false})-[:SATISFIES]->(r)""")
 
 
 def simulate_withdrawal(g):
-    """Idempotent demo event: preserve ten completed wipes and expose W2."""
-    g.query("""MATCH (o:Offer {id:'wiping-slot'})
-               SET o.active=false RETURN o.id""")
-    g.query("""MATCH (r:Requirement {id:'wipe'})
-               MERGE (org:Organization {id:'wiper2'})
-               SET org.name='Backup wiping provider W2'
-               MERGE (org)-[:MAKES]->(o:Offer {id:'backup-wiping-slot'})
-               SET o.quantity=10, o.window_start=630, o.window_end=690,
-                   o.rate_per_hour=10, o.parallelism=1, o.minutes_each=0,
-                   o.van_capacity=0, o.trip_minutes=0, o.active=true
-               MERGE (o)-[:SATISFIES]->(r)""")
-    for number in range(1, 11):
-        g.query("""MATCH (d:Device {id:$id})
-                   MERGE (record:WipeRecord {device_id:$id})
-                   SET record.completed_at=600, record.simulated=true
-                   MERGE (d)-[:HAS_WIPE_RECORD]->(record)""",
-                {"id": f"L{number:02d}"})
-    g.query("""MERGE (episode:Episode {id:'wiper-withdrawal'})
-               SET episode.kind='withdrawal', episode.minute=600,
-                   episode.simulated=true""")
-    g.query("""MATCH (episode:Episode {id:'wiper-withdrawal'}),
-                    (org:Organization {id:'wiper'})
-               MERGE (episode)-[:INVOLVED]->(org)""")
-    g.query("""MATCH (record:WipeRecord), (episode:Episode {id:'wiper-withdrawal'})
-               MERGE (record)-[:RECORDED_IN]->(episode)""")
+    """One idempotent graph mutation preserves ten synthetic completed wipes."""
+    ids = [f"L{number:02d}" for number in range(1, 11)]
+    result = g.query("""MATCH (w:Offer {id:'wiping-slot'}),
+                            (w2:Offer {id:'backup-wiping-slot'}),
+                            (w3:Offer {id:'late-wiping-slot'}),
+                            (org:Organization {id:'wiper'}),
+                            (revision:Revision {id:'case'})
+                      WHERE coalesce(w.active,true) = true
+                      MATCH (device:Device) WHERE device.id IN $ids
+                      WITH w,w2,w3,org,revision,collect(device) AS devices
+                      WHERE size(devices)=size($ids)
+                      SET w.active=false, w2.active=true, w3.active=true,
+                          revision.value=revision.value+1
+                      WITH org,devices
+                      MERGE (episode:Episode {id:'wiper-withdrawal'})
+                      SET episode.kind='withdrawal', episode.minute=600,
+                          episode.simulated=true
+                      MERGE (episode)-[:INVOLVED]->(org)
+                      WITH episode,devices
+                      UNWIND devices AS device
+                      MERGE (record:WipeRecord {device_id:device.id})
+                      SET record.completed_at=600, record.simulated=true
+                      MERGE (device)-[:HAS_WIPE_RECORD]->(record)
+                      MERGE (record)-[:RECORDED_IN]->(episode)
+                      RETURN count(device)""", {"ids": ids})
+    written = result.result_set[0][0] if result.result_set else 0
+    if written == 0:
+        replay = g.ro_query("""MATCH (w:Offer {id:'wiping-slot'}),
+                                 (w2:Offer {id:'backup-wiping-slot'}),
+                                 (w3:Offer {id:'late-wiping-slot'}),
+                                 (r:Revision {id:'case'})
+                             OPTIONAL MATCH (d:Device)-[:HAS_WIPE_RECORD]->(record:WipeRecord)
+                               -[:RECORDED_IN]->(:Episode {id:'wiper-withdrawal'})
+                             WHERE d.id IN $ids AND record.simulated=true
+                             RETURN w.active,w2.active,w3.active,r.value,
+                                    count(DISTINCT d.id)""", {"ids": ids}).result_set
+        if (len(replay) != 1 or replay[0] != [False, True, True, 2, len(ids)]):
+            raise ValueError("Withdrawal did not find every synthetic device")
+    elif written != len(ids):
+        raise ValueError("Withdrawal did not find every synthetic device")
+
+
+def revision(g):
+    rows = g.ro_query("MATCH (r:Revision {id:'case'}) RETURN r.value").result_set
+    if len(rows) != 1:
+        raise ValueError("Demo revision missing or duplicated")
+    return rows[0][0]
+
+
+def save_proposal(g, expected_revision, selected, delivery_minute, evidence_ids):
+    """Atomically decline to record a pending proposal after the case changes."""
+    proposal_id = str(uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
+    rows = g.query("""MATCH (r:Revision {id:'case'})
+                      WHERE r.value=$expected
+                      CREATE (p:Proposal {id:$id, revision:$expected,
+                        status:'pending_human_review', delivery_minute:$delivery,
+                        selected_offer_ids:$offers, evidence_ids:$evidence,
+                        created_at:$created_at, simulated:true})
+                      RETURN p.id""", {"expected": expected_revision,
+                                       "id": proposal_id,
+                                       "delivery": delivery_minute,
+                                       "offers": selected,
+                                       "evidence": evidence_ids,
+                                       "created_at": created_at}).result_set
+    return proposal_id if rows else None
 
 
 def candidates(g):
@@ -130,28 +182,50 @@ def candidates(g):
 
 def scenario(g):
     """Read the current quantity, deadline, and contribution terms from FalkorDB."""
+    for _ in range(3):
+        before = revision(g)
+        result = _scenario_once(g)
+        if revision(g) == before:
+            result["revision"] = before
+            return result
+    raise RuntimeError("Graph changed during scenario read; retry")
+
+
+def _scenario_once(g):
     goals = g.query("MATCH (goal:Goal {id:$id}) RETURN goal.quantity, goal.deadline",
                     {"id": GOAL_ID}).result_set
     if len(goals) != 1:
         raise ValueError("Demo goal missing or duplicated in FalkorDB")
+    requirements = {row[0]: row[1] for row in g.ro_query("""MATCH (:Goal {id:$id})
+                       -[:REQUIRES]->(r:Requirement) RETURN r.id,r.quantity""",
+                       {"id": GOAL_ID}).result_set}
     rows = g.query("""MATCH (:Goal {id:$id})-[:REQUIRES]->(r:Requirement)
                       <-[:SATISFIES]-(o:Offer)<-[:MAKES]-(org:Organization)
                       WHERE coalesce(o.active,true) = true
                       RETURN r.id, o.id, o.quantity, o.window_start, o.window_end,
                              o.rate_per_hour, o.parallelism, o.minutes_each,
-                             o.van_capacity, o.trip_minutes, org.name""",
+                             o.van_capacity, o.trip_minutes, org.id, org.name""",
                    {"id": GOAL_ID}).result_set
     completed = [row[0] for row in g.query("""MATCH (d:Device)-[:HAS_WIPE_RECORD]->(record:WipeRecord)
                                                   WHERE record.simulated=true RETURN d.id ORDER BY d.id""").result_set]
-    inventory = [row[0] for row in g.query("MATCH (d:Device) RETURN d.id ORDER BY d.id").result_set]
+    inventory = [row[0] for row in g.query("""MATCH (:Offer {id:'device-batch'})
+                                              -[:INCLUDES]->(d:Device)
+                                              RETURN d.id ORDER BY d.id""").result_set]
+    options = {}
+    for row in rows:
+        options.setdefault(row[0], []).append({"id": row[1], "quantity": row[2],
+            "window_start": row[3], "window_end": row[4],
+            "rate_per_hour": row[5], "parallelism": row[6],
+            "minutes_each": row[7], "van_capacity": row[8],
+            "trip_minutes": row[9], "organization_id": row[10],
+            "organization": row[11],
+            "path": [GOAL_ID, row[0], row[1], row[10]]})
+    for offers in options.values():
+        offers.sort(key=lambda offer: offer["id"])
     return {"quantity": goals[0][0], "deadline": goals[0][1],
+            "requirement_quantities": requirements,
             "completed_wipe_ids": completed, "device_ids": inventory,
-            "offers": {row[0]: {"id": row[1], "quantity": row[2],
-                                 "window_start": row[3], "window_end": row[4],
-                                 "rate_per_hour": row[5], "parallelism": row[6],
-                                 "minutes_each": row[7], "van_capacity": row[8],
-                                 "trip_minutes": row[9], "organization": row[10]}
-                       for row in rows}}
+            "offer_options": options}
 
 
 def memories(g):
