@@ -3,6 +3,29 @@ const labels = {devices:"Retired devices",wipe:"Data wiping",repair:"Preparation
 const stepLabels = {wipe:"Wipe devices",transfer:"Move to workshop",prepare:"Prepare devices",deliver:"Deliver to school"};
 function clock(minutes){const m=minutes%1440;return `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`}
 function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node}
+function renderComparison(scenario,proposal){
+  const kinds=["devices","wipe","repair","room"];
+  const firstIds=Object.fromEntries(kinds.map(kind=>[kind,scenario.offer_options[kind]?.[0]?.id]));
+  const first=(proposal.alternatives||[]).find(item=>kinds.every(kind=>item.offer_ids[kind]===firstIds[kind]));
+  const firstWiper=scenario.offer_options.wipe?.find(offer=>offer.id===firstIds.wipe)?.organization;
+  const selectedWiper=proposal.selected_offers?.wipe?.organization;
+  const comparison=$("comparison");comparison.replaceChildren();
+  for(const [label,item,wiper] of [["First active offer",first,firstWiper],["PACT · connected search",proposal,selectedWiper]]){
+    const card=el("article","policy-card");
+    const status=item?.status==="feasible_within_model"?`${wiper||"Provider"} · ${clock(item.delivery_by_minute)}`:
+      item?.status==="blocked"?"Blocked":item?.status==="unresolved"?"Unresolved":"Not checked";
+    card.append(el("span","field-label",label),el("strong",null,status));
+    if(item?.status!=="feasible_within_model")card.append(el("p",null,item?.reason||"No checked comparison is available."));
+    comparison.append(card);
+  }
+  let conclusion="Comparison unavailable for this case.";
+  if(first?.status==="feasible_within_model"&&proposal.status==="feasible_within_model"){
+    const minutes=first.delivery_by_minute-proposal.delivery_by_minute;
+    conclusion=minutes>0?`PACT's checked proposal is ${minutes} modeled minutes earlier.`:"Both policies reach the same checked delivery time.";
+  }else if(first?.status==="blocked"&&proposal.status==="feasible_within_model")conclusion="PACT finds a feasible continuation that the first-offer policy misses.";
+  else if(first?.status==="blocked"&&proposal.status==="blocked")conclusion="Both policies block the unsafe plan.";
+  comparison.append(el("p","comparison-conclusion",conclusion));
+}
 function render(data){
   const {scenario,proposal,episodes,memories,saved_proposals}=data;
   const recovered=scenario.completed_wipe_ids.length>0;
@@ -41,6 +64,7 @@ function render(data){
       el("span",null,`${clock(proposal.steps[key].start)}–${clock(proposal.steps[key].end)}`));schedule.append(step)}
     schedule.after(document.querySelector(".day2")||el("div","day2","Day 2: community clinic 09:00–12:00, then school introduction 12:00–13:00. The room is never double booked."));
   }else{schedule.append(el("p","empty",proposal.reason));document.querySelector(".day2")?.remove()}
+  renderComparison(scenario,proposal);
   const done=new Set(scenario.completed_wipe_ids);$("retained-count").textContent=`${done.size} / ${scenario.quantity}`;
   const devices=$("devices");devices.replaceChildren();for(const id of scenario.device_ids.slice(0,scenario.quantity)){
     const node=el("span",`device${done.has(id)?" done":""}`,id);node.title=done.has(id)?"Synthetic wipe completed":"Wipe outstanding";devices.append(node)}
