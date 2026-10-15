@@ -1,5 +1,7 @@
 # PACT — graph-backed collaboration planning
 
+[![Verify PACT](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/workflows/verify.yml/badge.svg)](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/workflows/verify.yml)
+
 Graph Hacks 2026 entry in progress. PACT explores whether a coordinator can assemble and recover a multi-organization collaboration from connected offers, constraints, evidence, and remembered outcomes. All current fixture data is synthetic. The primary track is **Agents That Act on Connected Data**. Track 02 remains conditional on a tested handoff between distinct agents; the present build does not claim shared agent coordination or a measured memory advantage.
 
 ## Status
