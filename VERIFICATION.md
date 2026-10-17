@@ -1,5 +1,15 @@
 # Local verification log
 
+## Public Pages playback and live form — 17 October 2026 IST
+
+The user explicitly approved enabling GitHub Pages for `/docs`. Pages was enabled with source branch `main`, folder `/docs`, and HTTPS enforced. [Deployment run](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39030590632) built commit `91c7cc4` successfully; the earlier hosting-approval gate is resolved.
+
+- [Public player](https://divyanshagarwal123.github.io/pact-graph-hacks/) returned HTTP 200 without authentication. The MP4 was served as `video/mp4`; captions and poster returned the expected types. Anonymous download matched the local reviewed file byte for byte. A range request returned HTTP 206 and `bytes 0-1023/4669987`.
+- Public browser playback advanced with ready state 4, duration 166.779667 seconds and no media error. Selecting the W3 chapter moved playback beyond 01:42 and playback continued. A screenshot is retained locally at `outputs/pact-public-player-verified.jpg`.
+- The organizer's form now loads. It contains eight required answers and specifically requests a public or unlisted YouTube link. Project title limit is 120 characters; PACT's title uses 40. Optional live deployment and blog fields are blank. The Pages video URL is not misrepresented as a live app deployment or a YouTube URL.
+- Seven of eight required answers are staged: title, description/disclosure, Track 01, repository, FalkorDB usage and two participant-review feedback drafts. No Submit action was taken. Exact staged values are saved locally in `outputs/submission-form-values.json` and reflected in `SUBMISSION_DRAFT.md`.
+- The existing YouTube channel is accessible. Its upload screen says submitting videos acknowledges YouTube Terms of Service and Community Guidelines. No file has been selected or uploaded; the upload waits for the required agreement confirmation. The reviewed file and unlisted-upload metadata are prepared locally.
+
 ## Publication and demo production — 17 October 2026 IST
 
 - Case-identity fix published at [95050e8](https://github.com/divyanshAgarwal123/pact-graph-hacks/commit/95050e89ae04ae2c7967f4a6ebd868f41de2b762). Its [clean-runner integration and comparison checks](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39029201162) passed.
