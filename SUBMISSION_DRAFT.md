@@ -1,10 +1,11 @@
 # PACT — submission packet
 
-Checked against the live organizer form on 17 October 2026 IST. Seven of eight required answers are staged in the browser. The remaining required answer is a **public or unlisted YouTube video URL**. Pages playback is verified, but it does not replace this form requirement. No final submission has occurred.
+Checked against the live organizer form on 17 October 2026 IST. **All eight required answers are staged in the browser**, including the verified Unlisted YouTube video. The form reports “Everything required is answered — 8 of 8 answered.” The final Submit button is untouched; the entry is ready for participant review, not submitted.
 
 ## Verified project links
 
 - Source and complete local setup: https://github.com/divyanshAgarwal123/pact-graph-hacks
+- Required YouTube demo: https://www.youtube.com/shorts/gZWB60hv4WM
 - Public working-video player: https://divyanshagarwal123.github.io/pact-graph-hacks/
 - Direct MP4: https://divyanshagarwal123.github.io/pact-graph-hacks/PACT-demo.mp4
 - Graph model and queries: https://github.com/divyanshAgarwal123/pact-graph-hacks/blob/main/CYPHER.md
@@ -35,9 +36,11 @@ https://github.com/divyanshAgarwal123/pact-graph-hacks
 
 ## Demo video
 
-**Pending:** upload the reviewed `docs/PACT-demo.mp4` to the existing YouTube channel as **Unlisted**, then verify playback and insert its actual watch URL. The file is 2:47 with visible captions and disclosed computer narration. Title, description, chapters and supporting links are prepared locally in `outputs/youtube-upload-metadata.json`.
+https://www.youtube.com/shorts/gZWB60hv4WM
 
-The YouTube upload screen explicitly requires acknowledgment of its [Terms of Service](https://www.youtube.com/t/terms) and [Community Guidelines](https://www.youtube.com/yt/about/policies/). No file has been selected or uploaded; obtain the required agreement confirmation before that step.
+Uploaded to the existing Divyansh Agarwal channel as **Unlisted** after the user approved the upload and acknowledgment of YouTube Terms and Community Guidelines. YouTube confirmed “Video published.” Browser playback advanced beyond 37 seconds with ready state 4 and no media error; duration was 166.801 seconds. Anonymous oEmbed access returned HTTP 200 with the correct title and author.
+
+The 2:47 video has visible captions and disclosed computer narration. It shows the actual app and published Cypher; model waiting time is shortened. The exact link is entered in the required Demo video field.
 
 ## Live demo or deployment — optional
 
@@ -63,9 +66,9 @@ The connected model lets us follow a goal to requirements, active offers and the
 
 An end-to-end example combining revision-checked writes, idempotent recovery, MCP read tools, and concurrency/restart tests would be valuable for agent builders. A companion walkthrough showing how to visualize before-and-after evidence paths would help explain why an agent changed its decision. These are suggested learning resources, not claims of a defect in FalkorDB.
 
-## Final gates
+## Final review and submission
 
-1. Confirm the YouTube upload acknowledgment, upload as Unlisted, and verify accessible playback. Insert the resulting YouTube URL; do not invent one or substitute the Pages URL.
-2. Divyansh reviews the video and staged answers, including the two feedback drafts, and can explain the graph, solver/checker, MCP tools and case/revision guard. Use `JUDGE_QA.md`.
-3. Inspect all eight required fields and the track selection, then obtain final submission authorization. The current request prepares the entry; it does not submit it.
-4. Submit before 18 October 2026, 11:59 PM IST and inspect the organizer's success page or confirmation as the receipt.
+1. Review all eight staged answers and the YouTube video, especially the two participant-feedback drafts. Track 01 is selected; other tracks and optional deployment/blog fields are blank.
+2. Divyansh can explain the graph, solver/checker, MCP tools and case/revision guard. Use `JUDGE_QA.md`. Meaningful participant review and understanding remain necessary.
+3. The user explicitly requested leaving the final submission for review. **Do not click Submit project without subsequent submission authorization.**
+4. Submit before 18 October 2026, 11:59 PM IST and inspect the organizer success page or confirmation as the receipt. No final submission has occurred.

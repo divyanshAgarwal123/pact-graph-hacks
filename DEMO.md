@@ -1,6 +1,6 @@
 # PACT judge demo script (target: 2–3 minutes)
 
-The [public browser walkthrough](https://divyanshagarwal123.github.io/pact-graph-hacks/) is 2:47, with verified public playback and chapter seeking. Source video, player, poster, captions and transcript are in `docs/`. It captures the live synthetic app and published Cypher on 17 October 2026, with disclosed computer narration; model waiting time is shortened. The actual submission form requires a public or unlisted **YouTube** link; that upload is pending agreement confirmation. The earlier API-replay video remains a separate local fallback.
+The [Unlisted YouTube demo](https://www.youtube.com/shorts/gZWB60hv4WM) is published and playback is verified. The [chaptered browser player](https://divyanshagarwal123.github.io/pact-graph-hacks/) also plays the 2:47 video publicly. Source video, player, poster, captions and transcript are in `docs/`. It captures the live synthetic app and published Cypher on 17 October 2026, with disclosed computer narration; model waiting time is shortened. The YouTube link is entered in the required submission field. The earlier API-replay video remains a separate local fallback.
 
 Record a real screen walkthrough of the running local app and briefly show FalkorDB Browser or the Cypher catalogue. Do not label a proposal as an approval or a real delivery.
 

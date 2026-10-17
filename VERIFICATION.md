@@ -1,5 +1,13 @@
 # Local verification log
 
+## Approved YouTube publication and complete staged form — 17 October 2026 IST
+
+- The user explicitly approved uploading the reviewed file to the existing YouTube channel as Unlisted and acknowledging the displayed Terms and Community Guidelines. Uploaded `docs/PACT-demo.mp4` with the prepared title, description, chapters and computer-narration/AI disclosure. The technical demo was marked not made for kids.
+- YouTube finished processing, reported no copyright issues in its checks, and showed **Unlisted selected** before Save. Save completed with **Video published**, and the resulting Channel content row independently showed **Unlisted** for PACT. The published link is [PACT — graph-grounded coalition recovery](https://www.youtube.com/shorts/gZWB60hv4WM).
+- The watch page decoded 672×948 video with duration 166.801 seconds, ready state 4 and no media error. Playback advanced from 0.251 to 37.690 seconds before pausing. A cookie-free anonymous oEmbed request returned HTTP 200 with the expected title, author Divyansh Agarwal and provider YouTube. This distinguishes anonymous metadata access from the separately observed browser playback.
+- Inserted the exact published link into the required Demo video field. The live form now says **Everything required is answered — 8 of 8 answered**. Only Track 01 is selected; optional deployment and blog fields remain blank.
+- The user explicitly requested leaving the final submission for review. **Submit project was not clicked.** Participant review, understanding and eventual final submission/receipt remain separate gates. Exact field values and upload proof are retained locally in `outputs/`; the complete review prose is in `SUBMISSION_DRAFT.md`.
+
 ## Public Pages playback and live form — 17 October 2026 IST
 
 The user explicitly approved enabling GitHub Pages for `/docs`. Pages was enabled with source branch `main`, folder `/docs`, and HTTPS enforced. [Deployment run](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39030590632) built commit `91c7cc4` successfully; the earlier hosting-approval gate is resolved.
