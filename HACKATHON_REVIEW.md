@@ -1,6 +1,6 @@
 # PACT × Graph Hacks: competition review
 
-**17 October checkpoint:** the reset-race fix is published and passed clean-runner checks. The [public video player](https://divyanshagarwal123.github.io/pact-graph-hacks/) plays and seeks correctly, and the [Unlisted YouTube demo](https://www.youtube.com/shorts/gZWB60hv4WM) is published with playback verified. All eight required answers, including that link, are staged in the live organizer form. Participant review and final submission remain open. See the current [submission packet](SUBMISSION_DRAFT.md); the dated review below preserves the earlier reasoning.
+**17 October checkpoint:** the reset-race fix is published and passed clean-runner checks. The [public video player](https://divyanshagarwal123.github.io/pact-graph-hacks/) plays and seeks correctly, and the [Unlisted YouTube demo](https://www.youtube.com/shorts/gZWB60hv4WM) is published with playback verified. After explicit authorization, all eight required answers and that link were submitted. The reloaded organizer page confirms **SUBMITTED**, filed **17 Oct 2026, 17:42**, in Track 01. See the current [submission packet](SUBMISSION_DRAFT.md); the dated review below preserves the earlier reasoning.
 
 Checked 16 October 2026 IST against the [event](https://www.wemakedevs.org/hackathons/falkordb), [rules](https://www.wemakedevs.org/hackathons/falkordb/rules), [schedule](https://www.wemakedevs.org/hackathons/falkordb/schedule), and the organizer's [graph-agent build guide](https://www.wemakedevs.org/blogs/how-to-build-an-agent-that-reasons-over-a-graph). The event opened 15 October at 12:01 AM IST and closes **18 October at 11:59 PM IST**. Solo entry is allowed. The current rules allow one, two, or all three tracks; the blog's narrower wording about one track should not override the rules.
 
@@ -48,4 +48,4 @@ Keep Track 01 only if the demo can show two live offers, a graph-sourced choice,
 | Polish | 17 October | Browser reset/withdraw/propose path, mobile and keyboard pass, clean setup, failure state |
 | Compete | 18 October with margin before 11:59 PM IST | Public source, playable demo video, track/disclosure text, final submission receipt |
 
-The current [Council review](COUNCIL_RESULT.md) authorized bounded local improvements, not submission readiness. Codex role diversity is not independent model-provider diversity. The source repository is public; the playable video and final form remain open.
+The current [Council review](COUNCIL_RESULT.md) authorized bounded local improvements, not submission readiness. Codex role diversity is not independent model-provider diversity. At that earlier review checkpoint, the playable video and final form remained open; publication and submission are now confirmed above.

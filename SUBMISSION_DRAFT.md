@@ -1,6 +1,6 @@
 # PACT — submission packet
 
-Checked against the live organizer form on 17 October 2026 IST. **All eight required answers are staged in the browser**, including the verified Unlisted YouTube video. The form reports “Everything required is answered — 8 of 8 answered.” The final Submit button is untouched; the entry is ready for participant review, not submitted.
+**Submitted and verified on 17 October 2026.** After explicit user authorization, the organizer page was reloaded and showed **SUBMITTED** for this solo entry, filed **17 Oct 2026, 17:42**, with the correct Track 01, repository, YouTube link and all answers below. Local confirmation screenshot, page text and receipt are saved in `outputs/`. No submission ID is displayed.
 
 ## Verified project links
 
@@ -58,17 +58,14 @@ The local model chooses read-only graph tools through MCP. A separate guarded Cy
 
 Leave blank. No blog submission is claimed.
 
-## What did you like about FalkorDB? — draft for participant review
+## What did you like about FalkorDB? — submitted answer
 
 The connected model lets us follow a goal to requirements, active offers and their organizations, while keeping completed work, historical episodes, change events and pending proposals in the same graph. Parameterized Cypher makes those evidence paths inspectable. The Python client and Docker setup also let us exercise the same graph operations in the local app and a clean CI environment.
 
-## What improvements would you like to see in FalkorDB? — draft for participant review
+## What improvements would you like to see in FalkorDB? — submitted answer
 
 An end-to-end example combining revision-checked writes, idempotent recovery, MCP read tools, and concurrency/restart tests would be valuable for agent builders. A companion walkthrough showing how to visualize before-and-after evidence paths would help explain why an agent changed its decision. These are suggested learning resources, not claims of a defect in FalkorDB.
 
-## Final review and submission
+## Submission confirmation
 
-1. Review all eight staged answers and the YouTube video, especially the two participant-feedback drafts. Track 01 is selected; other tracks and optional deployment/blog fields are blank.
-2. Divyansh can explain the graph, solver/checker, MCP tools and case/revision guard. Use `JUDGE_QA.md`. Meaningful participant review and understanding remain necessary.
-3. The user explicitly requested leaving the final submission for review. **Do not click Submit project without subsequent submission authorization.**
-4. Submit before 18 October 2026, 11:59 PM IST and inspect the organizer success page or confirmation as the receipt. No final submission has occurred.
+The completed form and solo-entry confirmation were submitted after explicit user authorization. The persisted organizer page confirms filing. Track 01 is selected; optional deployment/blog fields are blank. The initial detail-loading error resolved on reload. No eligibility decision, judging result or prize is claimed. Participant explanation notes remain in `JUDGE_QA.md`.

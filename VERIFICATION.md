@@ -1,5 +1,13 @@
 # Local verification log
 
+## Authorized final submission — 17 October 2026
+
+- The user explicitly authorized submitting the completed PACT form. Completed Submit project and the solo-entry confirmation.
+- The initial response said “Your project is in” but failed to load details. After reload, the organizer page showed **SUBMITTED**, **PACT — graph-grounded coalition recovery**, **Solo entry**, **Agents That Act on Connected Data**, the correct public repository and YouTube demo, all submitted answers, and **17 Oct 2026, 17:42** as the filing time. Edit project and Withdraw project controls were present.
+- Saved the full-page screenshot, page text, structured confirmation and receipt locally in `outputs/`. The organizer did not display a submission ID. This confirms filing, not judging, eligibility approval or a prize.
+
+Earlier entries below are historical checkpoints; their outstanding submission gates are superseded by this confirmation.
+
 ## Approved YouTube publication and complete staged form — 17 October 2026 IST
 
 - The user explicitly approved uploading the reviewed file to the existing YouTube channel as Unlisted and acknowledging the displayed Terms and Community Guidelines. Uploaded `docs/PACT-demo.mp4` with the prepared title, description, chapters and computer-narration/AI disclosure. The technical demo was marked not made for kids.
