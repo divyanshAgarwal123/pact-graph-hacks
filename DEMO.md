@@ -1,5 +1,7 @@
 # PACT judge demo script (target: 2–3 minutes)
 
+The [recorded browser walkthrough](https://divyanshagarwal123.github.io/pact-graph-hacks/) is 2:47. Source video, poster, captions and transcript are in `docs/`. It captures the live synthetic app and published Cypher on 17 October 2026, with disclosed computer narration; model waiting time is shortened. The earlier API-replay video remains a separate local fallback.
+
 Record a real screen walkthrough of the running local app and briefly show FalkorDB Browser or the Cypher catalogue. Do not label a proposal as an approval or a real delivery.
 
 1. **Problem, 20 seconds.** Four synthetic organizations have parts of a school laptop project. A coordinator needs 20 prepared devices by 15:00; one provider can withdraw after work has started.

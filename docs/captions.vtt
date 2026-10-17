@@ -1,0 +1,97 @@
+WEBVTT
+
+00:00:00.250 --> 00:00:05.543
+PACT helps a coordinator recover a shared project when one partner withdraws. In this synthetic
+
+00:00:05.543 --> 00:00:10.837
+example, a school needs twenty prepared laptops by three P M. No organization can finish
+
+00:00:10.837 --> 00:00:16.130
+the project alone. We start with the original checked plan, which delivers at two P
+
+00:00:16.130 --> 00:00:16.483
+M.
+
+00:00:17.480 --> 00:00:24.047
+FalkorDB connects the school goal to requirements, offers, and the organizations behind them. These are
+
+00:00:24.047 --> 00:00:30.614
+live graph facts: quantities, availability, processing rates, and completed work. The planner checks connected partner
+
+00:00:30.614 --> 00:00:37.181
+combinations with a constraint solver, then independently checks the resulting schedule. The graph is the
+
+00:00:37.181 --> 00:00:39.808
+only source of current collaboration state.
+
+00:00:40.810 --> 00:00:46.480
+Now the original wiping provider withdraws after ten devices are finished. PACT preserves those ten
+
+00:00:46.480 --> 00:00:52.150
+records and considers two backup offers for the rest. W two can finish in time,
+
+00:00:52.150 --> 00:00:57.820
+with delivery at two thirty. W three is also connected, but its later availability misses
+
+00:00:57.820 --> 00:01:00.467
+the deadline. The rejected alternative stays visible.
+
+00:01:01.470 --> 00:01:07.187
+The local coordinator agent calls three read-only tools through MCP: inspect connections, check schedule, and
+
+00:01:07.187 --> 00:01:12.904
+recall failure. An old W two failure at five devices an hour does not match
+
+00:01:12.904 --> 00:01:18.621
+its current rate of ten. After checking the evidence, the agent requests a pending proposal.
+
+00:01:18.621 --> 00:01:22.052
+This is human review, never an approval or reservation.
+
+00:01:23.050 --> 00:01:28.684
+Change W two back to its old rate. Both backup schedules now fail, and PACT
+
+00:01:28.684 --> 00:01:34.318
+blocks the proposal. The historical warning becomes applicable. The earlier saved proposal is marked stale
+
+00:01:34.318 --> 00:01:39.951
+because the graph revision changed. PACT keeps the ten completed records instead of pretending the
+
+00:01:39.951 --> 00:01:41.078
+project starts over.
+
+00:01:42.080 --> 00:01:47.915
+Move W three earlier while W two remains slow. PACT now finds a checked two
+
+00:01:47.915 --> 00:01:53.750
+P M continuation. The first-active-offer baseline still blocks. Both policies use the same current facts
+
+00:01:53.750 --> 00:01:59.196
+and schedule checker. This is a bounded synthetic comparison, not a general performance claim.
+
+00:02:00.200 --> 00:02:05.673
+The custom form accepts actual offer terms, not just named presets. Set W two to
+
+00:02:05.673 --> 00:02:11.146
+seven devices per hour and W three to ten fifteen. These values are written to
+
+00:02:11.146 --> 00:02:16.619
+FalkorDB. The same planner selects W three for two fifteen. The change ledger records which
+
+00:02:16.619 --> 00:02:19.903
+offer terms changed and the previous proposal remains stale.
+
+00:02:20.900 --> 00:02:26.962
+The public source includes the graph model, executed Cypher, setup instructions, and verification suite. The
+
+00:02:26.962 --> 00:02:33.023
+reset fix checks a unique case identity as well as its revision, rejecting old proposals
+
+00:02:33.023 --> 00:02:39.085
+even when revision numbers repeat. PACT is one synthetic workflow with checked pending proposals. Codex
+
+00:02:39.085 --> 00:02:45.146
+coding assistance and this computer narration are disclosed. The entry targets Agents That Act on
+
+00:02:45.146 --> 00:02:45.955
+Connected Data.

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Watch PACT recover a shared laptop project from a provider withdrawal using live FalkorDB facts and checked pending proposals.">
+  <title>PACT — working browser demo</title>
+  <style>
+    :root{font-family:"Avenir Next",Avenir,"Segoe UI",sans-serif;color:#19313b;background:#f6f8f7;line-height:1.5}
+    *{box-sizing:border-box}body{margin:0}main{max-width:1080px;margin:auto;padding:32px 24px 56px}
+    header{border-bottom:1px solid #ced9dc;padding-bottom:22px;margin-bottom:26px}.brand{font-weight:800;letter-spacing:-.04em;font-size:25px}
+    h1{font-size:clamp(29px,4vw,43px);line-height:1.15;letter-spacing:-.045em;max-width:810px;margin:16px 0}
+    h2{font-size:20px;letter-spacing:-.02em;margin:25px 0 8px}p{max-width:710px;color:#536a73}.meta{font-size:13px;color:#536a73}
+    .layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(250px,.9fr);gap:32px;align-items:start}
+    video{display:block;width:100%;max-height:78vh;background:#13242c;border:1px solid #c1cfd3}
+    button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #be812f;outline-offset:3px}
+    #play{padding:11px 20px;background:#315b73;color:white;border:0;border-radius:3px;margin:12px 0;font-weight:700;min-height:44px}
+    a{color:#245c76;text-underline-offset:3px}.links{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 23px}
+    ol{padding-left:20px}li{margin:9px 0}.chapter{padding:2px 0;background:transparent;border:0;color:#245c76;text-align:left;text-decoration:underline;text-underline-offset:3px}
+    #playback-status{font-size:13px;min-height:20px}.note{border-top:1px solid #ced9dc;padding-top:16px;font-size:13px}
+    @media(max-width:720px){.layout{grid-template-columns:1fr;gap:16px}main{padding:24px 18px}video{max-height:82vh}}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">PACT / working demo</div>
+      <h1>When a partner withdraws, keep the work that’s done.</h1>
+      <p>Find a checked continuation across connected offers, preserve completed work, and show why one partner fits while another fails.</p>
+      <div class="meta">Graph Hacks 2026 · Agents That Act on Connected Data · 2 minutes 47 seconds</div>
+    </header>
+    <div class="layout">
+      <section aria-label="Demo video">
+        <video id="demo" controls playsinline preload="metadata" poster="poster.jpg" aria-label="PACT live browser walkthrough with computer narration and visible captions">
+          <source src="PACT-demo.mp4" type="video/mp4">
+          Your browser cannot play this video. <a href="PACT-demo.mp4">Download the MP4</a>.
+        </video>
+        <button id="play" type="button">Play demo</button>
+        <p id="playback-status" role="status" aria-live="polite"></p>
+        <div class="links"><a href="PACT-demo.mp4">Open MP4</a><a href="captions.vtt" download>Captions</a><a href="https://github.com/divyanshAgarwal123/pact-graph-hacks/blob/main/docs/transcript.md">Transcript</a></div>
+      </section>
+      <section aria-labelledby="chapters-heading">
+        <h2 id="chapters-heading">Watch the decision change</h2>
+        <ol>
+          <li><button class="chapter" data-time="0">00:00 — The deadline</button></li>
+          <li><button class="chapter" data-time="17.23">00:17 — Connected offers</button></li>
+          <li><button class="chapter" data-time="40.56">00:41 — Recover unfinished work</button></li>
+          <li><button class="chapter" data-time="61.22">01:01 — A guarded agent action</button></li>
+          <li><button class="chapter" data-time="82.80">01:23 — Block an unsafe plan</button></li>
+          <li><button class="chapter" data-time="101.83">01:42 — W3 rescues the goal</button></li>
+          <li><button class="chapter" data-time="119.95">02:00 — Change the terms yourself</button></li>
+          <li><button class="chapter" data-time="140.65">02:21 — Evidence and limits</button></li>
+        </ol>
+        <h2>Reproduce the result</h2>
+        <p>FalkorDB supplies current graph facts and stores progress, revisions and pending proposals. A constraint solver and independent checker verify schedules.</p>
+        <div class="links"><a href="https://github.com/divyanshAgarwal123/pact-graph-hacks">Source and setup</a><a href="https://github.com/divyanshAgarwal123/pact-graph-hacks/blob/main/CYPHER.md">Graph model and Cypher</a><a href="https://github.com/divyanshAgarwal123/pact-graph-hacks/blob/main/VERIFICATION.md">Verification</a><a href="https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39029201162">Passing fix checks</a></div>
+        <p class="note">All scenario data is synthetic. A feasible schedule is a pending proposal, not a reservation, approval or real delivery. This is an edited capture of the working browser app; model waiting time is shortened. Computer narration and Codex coding assistance are disclosed. No general memory advantage is claimed.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const video=document.getElementById('demo'),play=document.getElementById('play'),status=document.getElementById('playback-status');
+    async function start(){try{await video.play();status.textContent='';}catch(error){status.textContent='Playback could not start. Use Open MP4 to try the video directly.';}}
+    play.addEventListener('click',()=>video.paused?start():video.pause());
+    video.addEventListener('play',()=>{play.textContent='Pause demo';});
+    video.addEventListener('pause',()=>{play.textContent='Play demo';});
+    video.addEventListener('error',()=>{status.textContent='The video could not load. Use Open MP4 or try again shortly.';});
+    for(const button of document.querySelectorAll('[data-time]'))button.addEventListener('click',()=>{video.currentTime=Number(button.dataset.time);start();});
+  </script>
+</body>
+</html>
