@@ -1,5 +1,27 @@
 # Local verification log
 
+## Recheck and reliability fix — 17 October 2026 IST
+
+The existing implementation was preserved and tested against the pinned local Docker FalkorDB. The web and Ollama services were stopped at the start of this session and were started on localhost. These are fresh local observations; the previously published commit and CI do not include this session's changes yet.
+
+| Check | Observed result |
+| --- | --- |
+| Installed environment and live graph | Existing locked environment imported FalkorDB, OR-Tools, FastAPI and MCP; pinned graph container was running |
+| `verify.py` and `evaluate.py` | Integration suite and all four documented counterfactual comparisons passed |
+| Reset/revision collision reproducer, before fix | An old feasible revision-3 proposal was accepted after reset into a different, blocked revision-3 case; reproduced only in a disposable graph |
+| Case identity fix | Every reset now generates a fresh case ID; scenario reads, API snapshots, agent inspection checks and atomic proposal writes compare identity plus revision. Missing identities fail visibly and require one synthetic reset |
+| Reset regression checks | Old-case proposal refused at a repeated revision; reset during a scenario read forced a retry; reset after model inspections and immediately before the guarded action returned unresolved and wrote no proposal. The action-race regression stubs model responses while executing real MCP tools against the disposable graph |
+| Live local `qwen3:8b` browser review after fix | Three MCP inspections and a separate `record_pending_proposal` request completed; proposal `d90a5039-…` was saved at revision 2 |
+| Browser counterfactuals and provenance | Original delivery 14:00; withdrawal retained ten wipe records and proposed W2 at 14:30; slowing W2 blocked the plan and marked its history applicable; W3 rescue proposed 14:00; saved revision-2 proposal became visibly stale. Comparison and revision-linked event ledger rendered |
+| Browser custom form | W2 7/hour and W3 10:15 produced the checked W3 14:15 continuation at revision 5; first-offer policy blocked. Keyboard Tab reached the second select and submit button; Enter resubmitted the unchanged terms without advancing the revision |
+| Phone viewport | At 390×844, document width remained 390px; schedule stacked and custom controls were operable. Temporary viewport was restored. This is a focused responsive check, not a full accessibility audit |
+| Docker restart | Same case identity, revision 5, ten completed wipe records, 14:15 plan and stored proposal survived unchanged |
+| Static checks | Python compilation, JavaScript syntax and `git diff --check` passed |
+
+Screenshots are retained locally in `outputs/pact-working-demo-2026-10-17.jpg`, `outputs/pact-custom-recovery-2026-10-17.jpg`, and `outputs/pact-mobile-2026-10-17.jpg`. The running demo is left at the custom revision-5 case; **Reset scenario** restores the opening example. A playable public demo video and final submission receipt remain outstanding. No general memory-benefit, tenant-isolation, or production-concurrency result follows from these checks.
+
+## Earlier checks — 16 October
+
 Observed October 16, 2026 IST, after the official coding window opened. The manual walkthrough used the synthetic `pact_demo` graph; `verify.py` used and deleted a separate `pact_verify` graph. Both used the FalkorDB Docker image pinned in `compose.yaml`.
 
 | Check | Observed result |

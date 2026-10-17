@@ -38,7 +38,8 @@ def seed(g):
     g.query("CREATE (:Goal {id:$id, label:$label, quantity:$quantity, deadline:$deadline})",
             {"id": GOAL_ID, "label": "20 prepared laptops and a class",
              "quantity": 20, "deadline": 900})
-    g.query("CREATE (:Revision {id:'case', value:1, variant:'original'})")
+    g.query("CREATE (:Revision {id:'case', case_id:$case_id, value:1, variant:'original'})",
+            {"case_id": str(uuid4())})
     g.query("""MATCH (r:Revision {id:'case'})
                CREATE (r)-[:HAS_EVENT]->(:CaseEvent {id:'initial-case',
                  revision:1, kind:'seed', variant:'original', simulated:true})""")
@@ -154,11 +155,15 @@ def simulate_withdrawal(g):
         raise ValueError("Withdrawal did not find every synthetic device")
 
 
+def case_version(g):
+    rows = g.ro_query("MATCH (r:Revision {id:'case'}) RETURN r.case_id,r.value").result_set
+    if len(rows) != 1 or not rows[0][0]:
+        raise ValueError("Demo case identity missing or duplicated; reset the synthetic scenario")
+    return tuple(rows[0])
+
+
 def revision(g):
-    rows = g.ro_query("MATCH (r:Revision {id:'case'}) RETURN r.value").result_set
-    if len(rows) != 1:
-        raise ValueError("Demo revision missing or duplicated")
-    return rows[0][0]
+    return case_version(g)[1]
 
 
 def change_history(g):
@@ -256,17 +261,19 @@ def _set_backup_terms(g, rate, start, end, name):
     raise ValueError("Contingency requires a complete simulated withdrawal")
 
 
-def save_proposal(g, expected_revision, selected, delivery_minute, evidence_ids):
+def save_proposal(g, expected_revision, selected, delivery_minute, evidence_ids, *, expected_case_id):
     """Atomically decline to record a pending proposal after the case changes."""
     proposal_id = str(uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
     rows = g.query("""MATCH (r:Revision {id:'case'})
-                      WHERE r.value=$expected
+                      WHERE r.value=$expected AND r.case_id=$case_id
                       CREATE (r)-[:HAS_PROPOSAL]->(p:Proposal {id:$id, revision:$expected,
+                        case_id:$case_id,
                         status:'pending_human_review', delivery_minute:$delivery,
                         selected_offer_ids:$offers, evidence_ids:$evidence,
                         created_at:$created_at, simulated:true})
                       RETURN p.id""", {"expected": expected_revision,
+                                       "case_id": expected_case_id,
                                        "id": proposal_id,
                                        "delivery": delivery_minute,
                                        "offers": selected,
@@ -301,10 +308,10 @@ def candidates(g):
 def scenario(g):
     """Read the current quantity, deadline, and contribution terms from FalkorDB."""
     for _ in range(3):
-        before = revision(g)
+        before = case_version(g)
         result = _scenario_once(g)
-        if revision(g) == before:
-            result["revision"] = before
+        if case_version(g) == before:
+            result["case_id"], result["revision"] = before
             return result
     raise RuntimeError("Graph changed during scenario read; retry")
 

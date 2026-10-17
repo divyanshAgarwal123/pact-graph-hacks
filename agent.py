@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 from mcp import Client
 
 from mcp_server import create_server
-from pact import GOAL_ID, revision, save_proposal
+from pact import GOAL_ID, case_version, save_proposal
 
 
 MODEL = os.getenv("PACT_MODEL", "qwen3:8b")
@@ -55,7 +55,7 @@ async def _mcp_call(server, name):
 
 def review(g):
     """Run bounded tools; record only a checked, revision-bound pending proposal."""
-    starting_revision = revision(g)
+    starting_case_id, starting_revision = case_version(g)
     mcp_server = create_server(lambda: g)
     messages = [
         {"role": "system", "content": (
@@ -95,7 +95,7 @@ def review(g):
                              "content": json.dumps(result)})
     if set(executed) != set(TOOL_NAMES):
         return {"status": "unresolved", "reason": "Required graph tools were not called", "trace": trace}
-    if revision(g) != starting_revision:
+    if case_version(g) != (starting_case_id, starting_revision):
         return {"status": "unresolved", "reason": "Graph changed during review; retry", "trace": trace}
 
     schema = {"type": "object", "properties": {
@@ -142,7 +142,8 @@ def review(g):
         selected = [offer["id"] for offer in checked["selected_offers"].values()]
         evidence = sorted(set(draft["evidence_ids"]) | set(selected))
         proposal_id = save_proposal(g, starting_revision, selected,
-                                    checked["delivery_by_minute"], evidence)
+                                    checked["delivery_by_minute"], evidence,
+                                    expected_case_id=starting_case_id)
         if proposal_id is None:
             return {"status": "unresolved", "reason": "Graph changed before proposal write; retry",
                     "trace": trace}

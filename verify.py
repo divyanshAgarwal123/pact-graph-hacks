@@ -1,6 +1,7 @@
 """Integration checks against a disposable FalkorDB graph, never pact_demo."""
 
 import asyncio
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
@@ -8,9 +9,9 @@ from unittest.mock import patch
 
 from falkordb import FalkorDB
 
-from agent import _mcp_call
+from agent import _mcp_call, review
 from mcp_server import create_server
-from pact import (change_history, memories, revision, save_proposal, scenario, seed,
+from pact import (_scenario_once, change_history, memories, revision, save_proposal, scenario, seed,
                   set_contingency, set_custom_terms, simulate_withdrawal)
 from planner import _plan_selection, cp_model, plan
 
@@ -101,9 +102,12 @@ def run():
         simulate_withdrawal(g)
 
         selected = [o["id"] for o in result["selected_offers"].values()]
-        checked(save_proposal(g, 1, selected, 870, selected) is None,
+        current_case_id = scenario(g)["case_id"]
+        checked(save_proposal(g, 1, selected, 870, selected,
+                              expected_case_id=current_case_id) is None,
                 "Stale revision must reject a proposal")
-        proposal_id = save_proposal(g, 2, selected, 870, selected)
+        proposal_id = save_proposal(g, 2, selected, 870, selected,
+                                    expected_case_id=current_case_id)
         checked(proposal_id is not None, "Current revision must accept a pending proposal")
         rows = connection().ro_query("MATCH (p:Proposal {id:$id}) RETURN p.revision,p.status",
                                      {"id": proposal_id}).result_set
@@ -175,6 +179,66 @@ def run():
                 "Preset must restore the checked baseline after custom terms")
 
         seed(g)
+        simulate_withdrawal(g)
+        set_contingency(g, "early_w3")
+        old_case = scenario(g)
+        old_plan = plan(old_case)
+        seed(g)
+        simulate_withdrawal(g)
+        set_contingency(g, "slow_w2")
+        new_case = scenario(g)
+        checked(old_case["revision"] == new_case["revision"] == 3 and
+                old_case["case_id"] != new_case["case_id"] and
+                plan(new_case)["status"] == "blocked",
+                "Reset must create a distinct case even when revision numbers repeat")
+        old_selected = [o["id"] for o in old_plan["selected_offers"].values()]
+        checked(save_proposal(g, old_case["revision"], old_selected,
+                              old_plan["delivery_by_minute"], old_selected,
+                              expected_case_id=old_case["case_id"]) is None and
+                not g.ro_query("MATCH (p:Proposal) RETURN p.id").result_set,
+                "Old-case proposal must be rejected after reset at the same revision")
+
+        snapshots = []
+
+        def reset_during_read(graph):
+            result = _scenario_once(graph)
+            snapshots.append(result)
+            if len(snapshots) == 1:
+                seed(graph)
+                simulate_withdrawal(graph)
+                set_contingency(graph, "early_w3")
+            return result
+
+        with patch("pact._scenario_once", side_effect=reset_during_read):
+            refreshed = scenario(g)
+        checked(len(snapshots) == 2 and refreshed["variant"] == "early_w3" and
+                refreshed["case_id"] == scenario(g)["case_id"],
+                "Scenario read must retry when reset reuses the same numeric revision")
+
+        seed(g)
+        simulate_withdrawal(g)
+        set_contingency(g, "early_w3")
+
+        def reset_during_action(messages, tools=None, format_schema=None):
+            if format_schema:
+                return {"content": json.dumps({"why": "Checked synthetic proposal",
+                                                "evidence_ids": ["school-laptops"]})}
+            names = [tool["function"]["name"] for tool in tools]
+            if names == ["record_pending_proposal"]:
+                seed(g)
+                simulate_withdrawal(g)
+                set_contingency(g, "slow_w2")
+            return {"tool_calls": [{"function": {"name": name, "arguments": {}}}
+                                   for name in names]}
+
+        with patch("agent._chat", side_effect=reset_during_action):
+            interrupted = review(g)
+        checked(interrupted["status"] == "unresolved" and
+                "Graph changed before proposal write" in interrupted["reason"] and
+                not g.ro_query("MATCH (p:Proposal) RETURN p.id").result_set,
+                "Agent action must reject a case reset after inspections and before writing")
+
+        seed(g)
         g.query("MATCH (o:Offer {id:'device-batch'}) SET o.quantity=18")
         checked(plan(scenario(g))["status"] == "blocked", "Insufficient donor quantity must block")
         seed(g)
@@ -227,7 +291,7 @@ def run():
                 "Recovered case must remain complete")
         print("PASS: MCP graph tools, base, competing offers, solver uncertainty, revision events, custom terms, live contingencies, partner switch, "
               "replay integrity, "
-              "stale and persisted proposals, six blocked constraints, "
+              "stale and persisted proposals, reset identity, six blocked constraints, "
               "failed atomic withdrawal, concurrent snapshots")
     finally:
         g.delete()

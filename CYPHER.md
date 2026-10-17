@@ -19,7 +19,7 @@ flowchart LR
   Revision -- HAS_PROPOSAL --> Proposal
 ```
 
-`Revision` is the current case-version node. `CaseEvent` nodes record supported mutations with previous and current offer terms; a proposal stores the checked revision in a property and is linked to the case node. The property still determines whether it is current. Every arrow in the diagram is a stored relationship.
+`Revision` is the current case-version node. It has a fresh `case_id` on every reset and a numeric revision within that case. `CaseEvent` nodes record supported mutations with previous and current offer terms; a proposal stores the checked case identity and revision and is linked to the case node. Every arrow in the diagram is a stored relationship.
 
 ## Candidate discovery
 
@@ -98,12 +98,13 @@ The UI reads `(:Revision)-[:HAS_EVENT]->(:CaseEvent)-[:AFFECTS]->(:Offer)` to ex
 
 ```cypher
 MATCH (r:Revision {id:'case'})
-WHERE r.value=$expected
+WHERE r.value=$expected AND r.case_id=$case_id
 CREATE (r)-[:HAS_PROPOSAL]->(p:Proposal {id:$id, revision:$expected,
+  case_id:$case_id,
   status:'pending_human_review', delivery_minute:$delivery,
   selected_offer_ids:$offers, evidence_ids:$evidence,
   created_at:$created_at, simulated:true})
 RETURN p.id
 ```
 
-The check and creation are one query. If a supported mutation advances the case revision, the stale proposal write returns no row. A pending proposal represents no approval, reservation, contact or delivery.
+The check and creation are one query. A changed revision or a reset to a different case returns no row. Numeric revisions can repeat after reset, so comparing the case identity is essential. Scenario reads and agent inspections also compare both values. A pending proposal represents no approval, reservation, contact or delivery.

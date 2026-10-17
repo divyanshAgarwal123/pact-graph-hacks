@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from pact import (CONTINGENCIES, candidates, change_history, graph, memories, revision, scenario,
+from pact import (CONTINGENCIES, candidates, case_version, change_history, graph, memories, scenario,
                   seed, set_contingency, set_custom_terms, simulate_withdrawal)
 from planner import plan
 from agent import review
@@ -56,7 +56,7 @@ def state():
                       "proposal": plan(current), "episodes": episodes,
                       "memories": memories(g), "saved_proposals": proposals,
                       "changes": change_history(g)}
-            if revision(g) == current["revision"]:
+            if case_version(g) == (current["case_id"], current["revision"]):
                 return result
         raise RuntimeError("Graph changed during state read; retry")
     except Exception as error:

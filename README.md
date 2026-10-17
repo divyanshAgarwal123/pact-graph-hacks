@@ -42,6 +42,8 @@ The demo graph is named `pact_demo`; `seed` replaces only that disposable graph.
 
 After withdrawal, the browser's **Live counterfactuals** controls update only the synthetic W2 rate and W3 window. Every changed set of terms advances the case revision; repeating the same setting is a no-op. Earlier proposals remain stored but are marked stale against the new revision. The HTTP endpoints are `POST /api/contingency/baseline`, `/early_w3`, `/slow_w2`, and `/rescue_w3`. They reject changes before withdrawal.
 
+Every reset creates a new case identity. Agent inspections and the atomic proposal write check both that identity and the numeric revision, so an in-flight proposal from an earlier case cannot be saved after a reset reuses the same revision number. If upgrading an existing demo graph created before this identity check, click **Reset scenario** once; missing identities fail visibly rather than bypassing the guard.
+
 The **Test these terms** form lets a judge choose W2's rate from 4–12 devices/hour and W3's start from 09:30–12:00 in 15-minute steps. W3 keeps a one-hour window. `POST /api/custom-terms` accepts `{"w2_rate":7,"w3_start_minute":615}` after withdrawal; that example checks W3 for a 14:15 modeled delivery. The bounds keep this synthetic one-trip workflow inspectable; the values are still written to FalkorDB and checked by the ordinary planner, not mapped to a preset answer.
 
 ## Graph model and central query
@@ -76,7 +78,7 @@ FalkorDB is the only store for this state. Removing it makes discovery and sched
 | 1 — Graph foundation | Live query found four organizations; query survived container restart; unavailable endpoint returned an error | Preserve local reproducibility |
 | 2 — Feasible schedule | 20-device witness delivered by 14:00; 18-device and 13:30-deadline variants blocked; tampered witness rejected | Expand beyond the fixed one-trip workflow |
 | 3 — Recovery and graph action | Ten simulated wipe records survived withdrawal and replay; a damaged replay was rejected. W2 delivered by 14:30 while W3 missed the deadline. The old 5/hour failure was rejected as obsolete against W2's current 10/hour offer. A checked pending proposal survived a database restart; stale writes were rejected. | Broader disruption set and measured outcomes |
-| 4 — Product and submission | Browser code shows two paths, a rejection reason, retained records, a saved proposal, and judge-chosen backup terms. The custom-term API and disposable-graph suite passed; the public source repository is live. | Visual browser pass for the new controls, video, final form, human explanation |
+| 4 — Product and submission | Browser walkthrough verified reset, withdrawal, a live model proposal, blocked/rescue cases, comparison, change ledger, stale proposal and judge-chosen terms on 17 October. The disposable-graph suite passed with reset-race regressions; the custom case persisted across Docker restart. Phone-width and keyboard checks passed for the custom form. | Video, final form, human explanation; publish the latest local fixes |
 
 ## Interpretation
 

@@ -1,6 +1,6 @@
 # PACT counterfactual evaluation
 
-Run `UV_CACHE_DIR=/tmp/pact-uv-cache uv run python evaluate.py` with FalkorDB running. The script creates and deletes a separate `pact_evaluate` graph; it does not alter the browser demo. Observed October 16, 2026 IST.
+Run `UV_CACHE_DIR=/tmp/pact-uv-cache uv run python evaluate.py` with FalkorDB running. The script creates and deletes a separate `pact_evaluate` graph; it does not alter the browser demo. Observed October 16 and reproduced October 17, 2026 IST after the case-identity fix.
 
 The comparison policy picks the first active offer for each requirement, then runs **the same CP-SAT solver and independent schedule checker** as PACT. PACT checks all bounded active-offer combinations and chooses the earliest checked delivery. Both policies read the same FalkorDB scenario in each case. The baseline is a simple first-partner policy, not a claim about other hackathon entries or an optimized alternative system.
 
