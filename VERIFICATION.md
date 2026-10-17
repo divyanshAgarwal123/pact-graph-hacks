@@ -1,5 +1,17 @@
 # Local verification log
 
+## Publication and demo production — 17 October 2026 IST
+
+- Case-identity fix published at [95050e8](https://github.com/divyanshAgarwal123/pact-graph-hacks/commit/95050e89ae04ae2c7967f4a6ebd868f41de2b762). Its [clean-runner integration and comparison checks](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39029201162) passed.
+- Actual browser workflow and published Cypher captured with the browser tool. Export is an edited 166.780-second H.264/AAC MP4 (672×948, 24 fps, 4,669,987 bytes), with computer narration and visible captions. Model waiting time is shortened. No application outcome is invented in the edit.
+- Published video/player/captions/transcript at [528b0ba](https://github.com/divyanshAgarwal123/pact-graph-hacks/commit/528b0ba5f3af144bf38fd293301896fd80cd5444); that commit's [verification workflow](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39030084519) also passed.
+- Decoded the full video, inspected a sample from each chapter, checked audio for unexpected prolonged silence, and verified browser playback. Chapter seeking worked against a range-capable local static server; browser reported the complete seekable interval, ready state 4 and no media error.
+- Downloaded the public MP4 anonymously and compared all bytes with the reviewed export. SHA-256: `b6a24a021fcc237a117ef26250ff601b125b8bb130a298ef670507131db838e9`.
+- GitHub's file page offers a download rather than inline playback. Public streaming-player activation is not complete: automatic approval review rejected the GitHub Pages configuration change pending explicit site-setting approval. No Pages setting was changed.
+- The organizer's submission route was tried twice and displayed “Unavailable — Couldn't reach the server. Check your connection.” in this browser. No final form fields, submission action or receipt were obtained. Participant explanation/review and the form's actual video requirements remain final gates.
+
+Review the local player at `http://127.0.0.1:8788/`; the app is separate at `http://127.0.0.1:8765/`. The prepared Pages source is branch `main`, folder `/docs`, containing only the video and static player assets.
+
 ## Recheck and reliability fix — 17 October 2026 IST
 
 The existing implementation was preserved and tested against the pinned local Docker FalkorDB. The web and Ollama services were stopped at the start of this session and were started on localhost. These are fresh local observations; the previously published commit and CI do not include this session's changes yet.

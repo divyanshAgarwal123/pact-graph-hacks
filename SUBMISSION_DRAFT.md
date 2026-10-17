@@ -19,11 +19,13 @@
 ## Submission links and remaining assets
 
 - Public source repository: [divyanshAgarwal123/pact-graph-hacks](https://github.com/divyanshAgarwal123/pact-graph-hacks) (public; source verified on the default branch)
-- Playable demonstration video: [PACT working browser demo](https://divyanshagarwal123.github.io/pact-graph-hacks/) — 2:47, captions and computer narration
-- Direct video: [MP4](https://divyanshagarwal123.github.io/pact-graph-hacks/PACT-demo.mp4)
+- Public demonstration file: [MP4 download](https://raw.githubusercontent.com/divyanshAgarwal123/pact-graph-hacks/main/docs/PACT-demo.mp4) — 2:47, captions and computer narration; anonymous download verified
+- Streaming video URL: **pending approval to activate the prepared GitHub Pages player**. Do not substitute an unverified Pages URL into the form.
 - Verified implementation fix: [95050e8](https://github.com/divyanshAgarwal123/pact-graph-hacks/commit/95050e89ae04ae2c7967f4a6ebd868f41de2b762); [passing clean-runner checks](https://github.com/divyanshAgarwal123/pact-graph-hacks/actions/runs/39029201162)
 - Live deployment: **not required; complete local setup is in README**
 - Final submission receipt: **pending**
+
+The submission page was rechecked on 17 October and displayed “Unavailable — Couldn't reach the server. Check your connection.” in the current browser. Actual field lengths, accepted video services and any upload limits remain unverified. Recheck the working form and public playback before declaring this package ready for final submission.
 
 ## Final form check
 
